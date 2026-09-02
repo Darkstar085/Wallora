@@ -1,27 +1,43 @@
 package com.darkstar.wallora.ui.theme
 
+import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import com.darkstar.wallora.model.ThemeMode
 
-private val WalloraColors = darkColorScheme(
-    primary = Color(0xFFB58CFF),
-    onPrimary = Color(0xFF24103F),
-    primaryContainer = Color(0xFF3A2163),
-    onPrimaryContainer = Color(0xFFEADBFF),
-    background = Color(0xFF0D0B10),
-    surface = Color(0xFF15121A),
-    surfaceVariant = Color(0xFF211B2C),
-    onBackground = Color(0xFFF7F2FA),
-    onSurface = Color(0xFFF7F2FA),
-    onSurfaceVariant = Color(0xFFB9AFBF),
-)
+private val WalloraLightColors = lightColorScheme()
+private val WalloraDarkColors = darkColorScheme()
 
 @Composable
-fun WalloraTheme(content: @Composable () -> Unit) {
+fun WalloraTheme(
+    themeMode: ThemeMode,
+    dynamicColors: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val context = LocalContext.current
+    val darkTheme = when (themeMode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+
+    val colorScheme = when {
+        dynamicColors && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && darkTheme ->
+            dynamicDarkColorScheme(context)
+        dynamicColors && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+            dynamicLightColorScheme(context)
+        darkTheme -> WalloraDarkColors
+        else -> WalloraLightColors
+    }
+
     MaterialTheme(
-        colorScheme = WalloraColors,
+        colorScheme = colorScheme,
         content = content,
     )
 }
