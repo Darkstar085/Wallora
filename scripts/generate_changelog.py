@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import datetime as dt
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -25,7 +26,7 @@ def previous_tag():
 
 def parse_commit(record):
     parts = record.split("\x1f")
-    sha = parts[0] if parts else ""
+    sha = parts[0].strip() if parts else ""
     subject = parts[1].strip() if len(parts) > 1 else ""
     body = parts[2].strip() if len(parts) > 2 else ""
     if any(subject.lower().startswith(p) for p in SKIP_PREFIXES):
@@ -40,7 +41,7 @@ def parse_commit(record):
         line = re.sub(r"^[-*+]\s+", "", line)
         if line:
             details.append(line)
-    return GROUPS.get(kind, "Other"), title, details, sha[:7]
+    return GROUPS.get(kind, "Other"), title, details, sha
 
 def main():
     p = argparse.ArgumentParser(description="Generate a release changelog from Git history.")
@@ -66,6 +67,7 @@ def main():
     if heading in old:
         raise SystemExit(f"Changelog entry already exists: {heading}")
 
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
     order = ["Features", "Fixes", "UI / UX", "Performance", "Refactoring", "CI / Build", "Build", "Documentation", "Testing", "Maintenance", "Reverted", "Other"]
     section = [heading, ""]
     for group in order:
@@ -74,7 +76,12 @@ def main():
             continue
         section += [f"### {group}", ""]
         for title, details, sha in entries:
-            section.append(f"- {title} ({sha})")
+            short_sha = sha[:7]
+            if repo and sha:
+                commit = f"[{short_sha}](https://github.com/{repo}/commit/{sha})"
+            else:
+                commit = short_sha
+            section.append(f"- {title} ({commit})")
             section.extend(f"  - {detail}" for detail in details)
         section.append("")
     if len(section) == 2:

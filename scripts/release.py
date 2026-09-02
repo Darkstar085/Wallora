@@ -40,7 +40,7 @@ def previous_release_tag(version_name):
 
 def changelog_section(version_name):
     text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    pattern = rf"^## \[{re.escape(version_name)}\].*$(.*?)(?=^## \[|\Z)"
+    pattern = rf"^## \[{re.escape(version_name)}\][^\n]*\n.*?(?=^## \[|\Z)"
     match = re.search(pattern, text, re.M | re.S)
     if not match:
         raise SystemExit(f"No changelog entry found for v{version_name}.")
