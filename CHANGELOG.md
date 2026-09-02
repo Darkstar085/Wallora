@@ -1,5 +1,44 @@
 # Changelog
 
+## [1.5] - 2026-09-02
+
+### Fixes
+
+- use persistent signing key for all APK builds (
+126156)
+  - Sign debug and release variants with the same Wallora keystore
+  - Keep the signing credentials in environment variables only
+  - Allow debug and release APKs to update each other without signature mismatch
+- generate version-only release changelogs (
+917158)
+  - Show only commits between the current release and previous release
+  - Add short commit SHAs to changelog entries
+  - Exclude release version-bump commits from generated notes
+  - Add a GitHub-style Full Changelog comparison link to release notes
+  - Update existing releases when publishing again
+
+### UI / UX
+
+- move explore search into top bar (
+b9d2af)
+  - Remove the permanent Explore search field
+  - Add a search icon to the top-right of the Explore header
+  - Reveal the search field when the icon is opened
+  - Preserve existing wallpaper search and category filtering
+
+### CI / Build
+
+- sign GitHub releases with persistent keystore (
+3cc623)
+  - Decode the release keystore from GitHub Secrets
+  - Build release APKs with the persistent Wallora signing key
+  - Fail the release when the signing key is missing
+- sign debug builds with release key (
+04d207)
+  - Decode the release keystore from GitHub Secrets
+  - Build debug APKs with the persistent signing key
+  - Allow debug builds to install over existing signed releases
+
 ## [1.0] - 2026-09-02
 
 ### Features

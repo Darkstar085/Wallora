@@ -11,8 +11,8 @@ android {
         applicationId = "com.darkstar.wallora"
         minSdk = 26
         targetSdk = 37
-        versionCode = 8
-        versionName = "1.0"
+        versionCode = 9
+        versionName = "1.5"
     }
 
     val keystorePath = System.getenv("WALLORA_KEYSTORE_PATH")
@@ -58,7 +58,7 @@ android {
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2026.08.00"))
     implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
