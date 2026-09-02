@@ -10,7 +10,11 @@ GROUPS = {
     "perf": "Performance", "build": "Build", "ci": "CI / Build", "docs": "Documentation",
     "test": "Testing", "chore": "Maintenance", "style": "Maintenance", "revert": "Reverted",
 }
-SKIP_PREFIXES = ("chore: bump version to ", "docs: update changelog for ")
+SKIP_PREFIXES = (
+    "chore: bump version to ",
+    "release: bump app version to ",
+    "docs: update changelog for ",
+)
 
 def run(*args):
     return subprocess.check_output(args, text=True).strip()
@@ -36,7 +40,7 @@ def parse_commit(record):
         line = re.sub(r"^[-*+]\s+", "", line)
         if line:
             details.append(line)
-    return GROUPS.get(kind, "Other"), title, details
+    return GROUPS.get(kind, "Other"), title, details, sha[:7]
 
 def main():
     p = argparse.ArgumentParser(description="Generate a release changelog from Git history.")
@@ -69,8 +73,8 @@ def main():
         if not entries:
             continue
         section += [f"### {group}", ""]
-        for title, details in entries:
-            section.append(f"- {title}")
+        for title, details, sha in entries:
+            section.append(f"- {title} ({sha})")
             section.extend(f"  - {detail}" for detail in details)
         section.append("")
     if len(section) == 2:

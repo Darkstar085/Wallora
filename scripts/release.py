@@ -29,6 +29,14 @@ def release_exists(tag):
     repo = os.environ.get("GITHUB_REPOSITORY", "")
     return run("gh", "release", "view", tag, "--repo", repo, check=False).returncode == 0
 
+def previous_release_tag(version_name):
+    tags = [t for t in run("git", "tag", "--list", "v*", "--sort=-version:refname").splitlines() if t]
+    current = f"v{version_name}"
+    if current in tags:
+        index = tags.index(current)
+        return tags[index + 1] if index + 1 < len(tags) else None
+    return tags[0] if tags else None
+
 def changelog_section(version_name):
     text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     pattern = rf"^## \[{re.escape(version_name)}\].*$(.*?)(?=^## \[|\Z)"
@@ -36,6 +44,16 @@ def changelog_section(version_name):
     if not match:
         raise SystemExit(f"No changelog entry found for v{version_name}.")
     return match.group(0).strip()
+
+def release_notes(version_name):
+    section = changelog_section(version_name)
+    previous = previous_release_tag(version_name)
+    current = f"v{version_name}"
+    if previous:
+        full = f"**Full Changelog:** [{previous}...{current}](https://github.com/{os.environ['GITHUB_REPOSITORY']}/compare/{previous}...{current})"
+    else:
+        full = f"**Full Changelog:** [commits/{current}](https://github.com/{os.environ['GITHUB_REPOSITORY']}/commits/{current})"
+    return section + "\n\n" + full + "\n"
 
 def amend_changelog():
     result = run("git", "status", "--short", "--", "CHANGELOG.md")
@@ -72,7 +90,7 @@ def main():
         if not (ROOT / "CHANGELOG.md").exists():
             raise SystemExit("CHANGELOG.md is missing. Run scripts/generate_changelog.py first.")
         notes_file = ROOT / "RELEASE_NOTES.md"
-        notes_file.write_text(changelog_section(name) + "\n", encoding="utf-8")
+        notes_file.write_text(release_notes(name), encoding="utf-8")
         repo = os.environ["GITHUB_REPOSITORY"]
         if release_exists(tag):
             print(f"Release {tag} already exists; updating its notes.")
