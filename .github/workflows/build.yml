@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - "!app/build.gradle.kts"
       - "gradle/**"
       - "gradle.properties"
       - "settings.gradle.kts"
@@ -26,6 +27,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Notify Telegram build started
+        if: env.TG_BOT_KEY != '' && env.TG_CHAT_ID != ''
+        env:
+          TG_BOT_KEY: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="${GITHUB_SHA::8}"
+          curl --fail --silent --show-error \
+            --connect-timeout 15 \
+            --max-time 60 \
+            --retry 3 \
+            --retry-delay 2 \
+            --retry-connrefused \
+            --data-urlencode "chat_id=${TG_CHAT_ID}" \
+            --data-urlencode "text=🤖 Wallora build started — ${SHA}" \
+            "https://api.telegram.org/bot${TG_BOT_KEY}/sendMessage"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
@@ -68,6 +88,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          SHA="${GITHUB_SHA::8}"
+          CAPTION=$(printf '📦 Wallora APK\nCommit: %s\n[View commit](%s/commit/%s)' "$SHA" "$REPO_URL" "$GITHUB_SHA")
           curl --fail --show-error --progress-bar \
             --connect-timeout 15 \
             --max-time 900 \
@@ -76,5 +98,25 @@ jobs:
             --retry-connrefused \
             -F "document=@${APK_PATH};filename=${APK_NAME}" \
             -F "chat_id=${TG_CHAT_ID}" \
-            --form-string "caption=📦 Wallora APK\nCommit: ${GITHUB_SHA::8}\n[View commit](${REPO_URL}/commit/${GITHUB_SHA})" \
+            -F "parse_mode=Markdown" \
+            --form-string "caption=${CAPTION}" \
             "https://api.telegram.org/bot${TG_BOT_KEY}/sendDocument"
+
+      - name: Notify Telegram build finished
+        if: success() && env.TG_BOT_KEY != '' && env.TG_CHAT_ID != ''
+        env:
+          TG_BOT_KEY: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="${GITHUB_SHA::8}"
+          curl --fail --silent --show-error \
+            --connect-timeout 15 \
+            --max-time 60 \
+            --retry 3 \
+            --retry-delay 2 \
+            --retry-connrefused \
+            --data-urlencode "chat_id=${TG_CHAT_ID}" \
+            --data-urlencode "text=✅ Wallora build finished — ${SHA}" \
+            "https://api.telegram.org/bot${TG_BOT_KEY}/sendMessage"
