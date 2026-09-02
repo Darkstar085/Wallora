@@ -1,6 +1,8 @@
 package com.darkstar.wallora.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,14 +18,17 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items as lazyItems
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,13 +39,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.darkstar.wallora.data.FavoriteStore
 import com.darkstar.wallora.data.WallpaperRepository
 import com.darkstar.wallora.model.Wallpaper
-import com.darkstar.wallora.ui.components.FeaturedWallpaper
 import com.darkstar.wallora.ui.components.WallpaperCard
+import com.darkstar.wallora.ui.components.WallpaperImage
 
 @Composable
 fun HomeScreen(
@@ -53,7 +62,6 @@ fun HomeScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedCategory by remember { mutableStateOf("All") }
-    var query by remember { mutableStateOf("") }
 
     fun load() {
         loading = true
@@ -72,17 +80,15 @@ fun HomeScreen(
     }
 
     val categories = remember(wallpapers) { listOf("All") + wallpapers.map { it.category }.distinct().sorted() }
-    val filtered = wallpapers.filter {
-        (selectedCategory == "All" || it.category == selectedCategory) &&
-            (query.isBlank() || it.title.contains(query, ignoreCase = true) || it.category.contains(query, ignoreCase = true))
-    }
+    val filtered = wallpapers.filter { selectedCategory == "All" || it.category == selectedCategory }
+    val featured = remember(wallpapers) { wallpapers.shuffled() }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             start = 18.dp,
-            top = contentPadding.calculateTopPadding() + 14.dp,
+            top = contentPadding.calculateTopPadding() + 8.dp,
             end = 18.dp,
             bottom = contentPadding.calculateBottomPadding() + 24.dp,
         ),
@@ -91,45 +97,24 @@ fun HomeScreen(
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column {
-                Text(
-                    "Wallora",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    "Minimal wallpapers, beautifully presented.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                    placeholder = { Text("Search wallpapers") },
-                )
-                Spacer(Modifier.height(22.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        "Featured",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        "${wallpapers.size} wallpapers",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelMedium,
-                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "Wallora",
+                            color = MaterialTheme.colorScheme.onBackground,
+                            style = MaterialTheme.typography.headlineLarge,
+                        )
+                        Text(
+                            "Minimal wallpapers, beautifully presented.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(12.dp))
                 when {
                     loading -> LoadingPanel()
                     error != null -> ErrorPanel(error!!, ::load)
-                    wallpapers.isNotEmpty() -> FeaturedWallpaper(wallpapers.first(), favoriteStore) { onWallpaperClick(wallpapers.first()) }
+                    featured.isNotEmpty() -> FeaturedCarousel(featured, favoriteStore, onWallpaperClick)
                     else -> EmptyPanel("No wallpapers found")
                 }
                 Spacer(Modifier.height(22.dp))
@@ -138,25 +123,20 @@ fun HomeScreen(
                         "Collections",
                         color = MaterialTheme.colorScheme.onBackground,
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
                     )
                     Spacer(Modifier.weight(1f))
-                    Text("${categories.size - 1}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Text("${categories.size - 1}", color = MaterialTheme.colorScheme.primary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                 }
                 Spacer(Modifier.height(10.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     lazyItems(categories) { category ->
                         Surface(
                             onClick = { selectedCategory = category },
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+                            shape = RoundedCornerShape(50),
                             color = if (selectedCategory == category) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = if (selectedCategory == category) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                         ) {
-                            Text(
-                                category,
-                                modifier = Modifier.padding(horizontal = 15.dp, vertical = 9.dp),
-                                fontWeight = FontWeight.SemiBold,
-                            )
+                            Text(category, modifier = Modifier.padding(horizontal = 15.dp, vertical = 9.dp))
                         }
                     }
                 }
@@ -165,7 +145,6 @@ fun HomeScreen(
                     "Latest wallpapers",
                     color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
                 )
                 Spacer(Modifier.height(4.dp))
             }
@@ -179,44 +158,78 @@ fun HomeScreen(
 }
 
 @Composable
-private fun LoadingPanel() {
-    Surface(
-        modifier = Modifier.fillMaxWidth().height(280.dp),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-    ) {
-        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+private fun FeaturedCarousel(
+    wallpapers: List<Wallpaper>,
+    favoriteStore: FavoriteStore,
+    onWallpaperClick: (Wallpaper) -> Unit,
+) {
+    val pagerState = rememberPagerState(pageCount = { wallpapers.size })
+
+    Column {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth().height(360.dp),
+            pageSpacing = 0.dp,
+        ) { page ->
+            val wallpaper = wallpapers[page]
+            var favorite by remember(wallpaper.id) { mutableStateOf(favoriteStore.contains(wallpaper.id)) }
+            Surface(
+                onClick = { onWallpaperClick(wallpaper) },
+                modifier = Modifier.fillMaxSize(),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+            ) {
+                Box {
+                    WallpaperImage(wallpaper, Modifier.fillMaxSize(), ContentScale.Crop)
+                    IconButton(
+                        onClick = { favorite = !favorite; favoriteStore.toggle(wallpaper.id) },
+                        modifier = Modifier.align(Alignment.TopEnd).padding(10.dp).background(Color.Black.copy(alpha = 0.42f), CircleShape),
+                    ) {
+                        Icon(
+                            if (favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = if (favorite) "Remove from favorites" else "Add to favorites",
+                            tint = Color.White,
+                        )
+                    }
+                }
+            }
         }
+        if (wallpapers.size > 1) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+            ) {
+                repeat(minOf(wallpapers.size, 7)) { index ->
+                    Box(
+                        Modifier.size(if (index == pagerState.currentPage) 18.dp else 7.dp, 7.dp)
+                            .clip(CircleShape)
+                            .background(if (index == pagerState.currentPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingPanel() {
+    Surface(Modifier.fillMaxWidth().height(360.dp), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
     }
 }
 
 @Composable
 private fun LoadingGridItem() {
-    Surface(
-        modifier = Modifier.fillMaxWidth().height(220.dp),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-    ) {
-        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(strokeWidth = 2.dp)
-        }
+    Surface(Modifier.fillMaxWidth().height(220.dp), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(strokeWidth = 2.dp) }
     }
 }
 
 @Composable
 private fun ErrorPanel(message: String, retry: () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth().height(180.dp),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-    ) {
-        Column(
-            Modifier.fillMaxSize().padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text("Couldn't load wallpapers", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+    Surface(Modifier.fillMaxWidth().height(180.dp), shape = RoundedCornerShape(26.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+        Column(Modifier.fillMaxSize().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Text("Couldn't load wallpapers", color = MaterialTheme.colorScheme.onSurface, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(10.dp))
             Button(onClick = retry) {
@@ -230,13 +243,7 @@ private fun ErrorPanel(message: String, retry: () -> Unit) {
 
 @Composable
 private fun EmptyPanel(message: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth().height(180.dp),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-    ) {
-        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+    Surface(Modifier.fillMaxWidth().height(180.dp), shape = RoundedCornerShape(26.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }
