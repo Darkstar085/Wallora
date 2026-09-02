@@ -10,13 +10,97 @@ permissions:
 
 jobs:
   cleanup:
-    name: Cleanup old workflow runs
+    name: Cleanup old workflow runs, artifacts and caches
     runs-on: ubuntu-latest
     steps:
-      - name: Delete old workflow runs
-        uses: Mattraks/delete-workflow-runs@v2
-        with:
-          token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          keep_minimum_runs: 3
-          delete_run_by_conclusion_pattern: failure,skipped,cancelled,timed_out,action_required,stale
+      - name: Clean old workflow runs, artifacts and caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Finding the latest run for each workflow..."
+          runs_json="$(gh api --paginate \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100" \
+            | jq -s '[.[] | .workflow_runs[]]')"
+
+          latest_runs="$(echo "$runs_json" | jq -r '
+            group_by(.workflow_id)
+            | .[]
+            | sort_by(.created_at)
+            | reverse
+            | .[0]
+            | [.workflow_id, .id]
+            | @tsv
+          ')"
+
+          echo "Latest workflow runs:"
+          echo "$latest_runs"
+
+          echo "Deleting old workflow runs..."
+          echo "$runs_json" \
+            | jq -r '
+                group_by(.workflow_id)
+                | .[]
+                | sort_by(.created_at)
+                | reverse
+                | .[1:]
+                | .[].id
+              ' \
+            | while read -r run_id; do
+                [ -n "$run_id" ] || continue
+                echo "Deleting old workflow run $run_id"
+                gh api --method DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
+              done
+
+          echo "Deleting artifacts from older workflow runs..."
+          latest_run_ids="$(echo "$latest_runs" | cut -f2 | paste -sd, -)"
+          gh api --paginate \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" \
+            | jq -s --arg latest "$latest_run_ids" '
+                ($latest | split(",") | map(select(length > 0) | tonumber)) as $keep
+                | [.[] | .artifacts[]]
+                | .[]
+                | select(.expired == false)
+                | select((.workflow_run.id // 0) as $run | ($keep | index($run) | not))
+                | .id
+              ' \
+            | while read -r artifact_id; do
+                [ -n "$artifact_id" ] || continue
+                echo "Deleting old artifact $artifact_id"
+                gh api --method DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}"
+              done
+
+          echo "Finding the latest cache for each cache family..."
+          caches_json="$(gh api --paginate \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${GITHUB_REPOSITORY}/actions/caches?per_page=100" \
+            | jq -s '[.[] | .actions_caches[]]')"
+
+          echo "Deleting older caches while keeping the newest cache for each family..."
+          echo "$caches_json" \
+            | jq -r '
+                group_by(.key | sub("([-|])[0-9a-fA-F]{32,64}$"; ""))
+                | .[]
+                | sort_by(.created_at)
+                | reverse
+                | .[1:]
+                | .[].id
+              ' \
+            | while read -r cache_id; do
+                [ -n "$cache_id" ] || continue
+                echo "Deleting old cache $cache_id"
+                gh api --method DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  "/repos/${GITHUB_REPOSITORY}/actions/caches/${cache_id}"
+              done
+
+          echo "Cleanup complete. One latest cache is retained for each cache family."
