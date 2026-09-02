@@ -28,6 +28,14 @@ jobs:
           java-version: "17"
           cache: gradle
 
+      - name: Decode release signing key
+        env:
+          WALLORA_KEYSTORE_BASE64: ${{ secrets.WALLORA_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          [ -n "$WALLORA_KEYSTORE_BASE64" ] || { echo "Missing WALLORA_KEYSTORE_BASE64 secret"; exit 1; }
+          printf '%s' "$WALLORA_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/wallora-release.jks"
+
       - name: Prepare release
         env:
           GITHUB_EVENT_BEFORE: ${{ github.event.before }}
@@ -35,9 +43,18 @@ jobs:
         run: python scripts/release.py --prepare
 
       - name: Build release APK
+        env:
+          WALLORA_KEYSTORE_PATH: ${{ runner.temp }}/wallora-release.jks
+          WALLORA_STORE_PASSWORD: ${{ secrets.WALLORA_STORE_PASSWORD }}
+          WALLORA_KEY_ALIAS: ${{ secrets.WALLORA_KEY_ALIAS }}
+          WALLORA_KEY_PASSWORD: ${{ secrets.WALLORA_KEY_PASSWORD }}
         run: |
+          set -euo pipefail
+          [ -n "$WALLORA_STORE_PASSWORD" ] || { echo "Missing WALLORA_STORE_PASSWORD secret"; exit 1; }
+          [ -n "$WALLORA_KEY_ALIAS" ] || { echo "Missing WALLORA_KEY_ALIAS secret"; exit 1; }
+          [ -n "$WALLORA_KEY_PASSWORD" ] || { echo "Missing WALLORA_KEY_PASSWORD secret"; exit 1; }
           chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleRelease --stacktrace
 
       - name: Publish release
         env:
