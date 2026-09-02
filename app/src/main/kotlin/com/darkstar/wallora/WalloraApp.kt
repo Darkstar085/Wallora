@@ -15,7 +15,6 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,7 +47,7 @@ private enum class AppTab(val label: String) {
 @Composable
 fun WalloraApp(preferences: PreferencesStore) {
     val context = LocalContext.current.applicationContext
-    val repository = remember { WallpaperRepository() }
+    val repository = remember { WallpaperRepository(context) }
     val favorites = remember { FavoriteStore(context) }
     var selectedTab by remember { mutableStateOf(AppTab.HOME) }
     var selectedWallpaper by remember { mutableStateOf<Wallpaper?>(null) }

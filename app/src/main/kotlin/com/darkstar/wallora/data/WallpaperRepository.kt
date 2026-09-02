@@ -1,5 +1,7 @@
 package com.darkstar.wallora.data
 
+import android.content.Context
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -8,19 +10,31 @@ import org.json.JSONObject
 import com.darkstar.wallora.model.Wallpaper
 
 class WallpaperRepository(
+    private val context: Context,
     private val client: OkHttpClient = OkHttpClient(),
 ) {
     suspend fun getWallpapers(): Result<List<Wallpaper>> = withContext(Dispatchers.IO) {
-        runCatching {
+        try {
             val request = Request.Builder().url(API_URL).build()
             client.newCall(request).execute().use { response ->
                 check(response.isSuccessful) { "Wallpaper service returned HTTP ${response.code}" }
                 val body = response.body?.string()?.takeIf { it.isNotBlank() }
                     ?: error("Wallpaper service returned an empty response")
-                parse(body)
+                val wallpapers = parse(body)
+                cacheFile.writeText(body)
+                Result.success(wallpapers)
             }
+        } catch (networkError: Exception) {
+            readCachedWallpapers()?.let { Result.success(it) }
+                ?: Result.failure(networkError)
         }
     }
+
+    private fun readCachedWallpapers(): List<Wallpaper>? = runCatching {
+        val body = cacheFile.takeIf { it.isFile }?.readText()?.takeIf { it.isNotBlank() }
+            ?: return@runCatching null
+        parse(body)
+    }.getOrNull()
 
     private fun parse(body: String): List<Wallpaper> {
         val items = JSONObject(body).getJSONArray("wallpapers")
@@ -43,7 +57,11 @@ class WallpaperRepository(
         }
     }
 
+    private val cacheFile: File
+        get() = File(context.filesDir, CACHE_FILE_NAME)
+
     companion object {
         const val API_URL = "https://raw.githubusercontent.com/Darkstar085/Wallpapers/main/api/wallpapers.json"
+        private const val CACHE_FILE_NAME = "wallpapers.json"
     }
 }
