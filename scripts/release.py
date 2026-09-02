@@ -8,8 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 def run(*args, check=True, capture=True):
-    result = subprocess.run(args, cwd=ROOT, check=check, text=True, capture_output=capture)
-    return result.stdout if capture else result
+    return subprocess.run(args, cwd=ROOT, check=check, text=True, capture_output=capture)
 
 def version():
     text = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
@@ -23,7 +22,7 @@ def version_changed():
     before = os.environ.get("GITHUB_EVENT_BEFORE", "")
     if not before or set(before) == {"0"}:
         return True
-    diff = run("git", "diff", "--unified=0", before, "HEAD", "--", "app/build.gradle.kts")
+    diff = run("git", "diff", "--unified=0", before, "HEAD", "--", "app/build.gradle.kts").stdout
     return bool(re.search(r"^[+-].*version(Name|Code)", diff, re.M))
 
 def release_exists(tag):
@@ -32,7 +31,7 @@ def release_exists(tag):
     return result.returncode == 0
 
 def previous_release_tag(version_name):
-    tags = [t for t in run("git", "tag", "--list", "v*", "--sort=-version:refname").splitlines() if t]
+    tags = [t for t in run("git", "tag", "--list", "v*", "--sort=-version:refname").stdout.splitlines() if t]
     current = f"v{version_name}"
     if current in tags:
         index = tags.index(current)
@@ -59,7 +58,7 @@ def release_notes(version_name):
 
 def amend_changelog():
     result = run("git", "status", "--short", "--", "CHANGELOG.md")
-    if not result.strip():
+    if not result.stdout.strip():
         print("Changelog is already committed; no amend needed.")
         return
     run("git", "add", "CHANGELOG.md")
@@ -98,10 +97,10 @@ def main():
             print(f"Release {tag} already exists; updating its notes.")
             subprocess.run(["gh", "release", "edit", tag, "--repo", repo, "--title", f"Wallora v{name}", "--notes-file", str(notes_file)], cwd=ROOT, check=True)
             return
-        apk_dir = ROOT / "app/build/outputs/apk/debug"
+        apk_dir = ROOT / "app/build/outputs/apk/release"
         apk = next(apk_dir.glob("*.apk"), None) if apk_dir.exists() else None
         if not apk:
-            raise SystemExit("No APK was produced. Build the debug APK before publishing.")
+            raise SystemExit("No release APK was produced. Build the release APK before publishing.")
         release_apk = ROOT / f"Wallora_v{name}.apk"
         release_apk.write_bytes(apk.read_bytes())
         subprocess.run(["gh", "release", "create", tag, str(release_apk), "--repo", repo, "--title", f"Wallora v{name}", "--notes-file", str(notes_file)], cwd=ROOT, check=True)
