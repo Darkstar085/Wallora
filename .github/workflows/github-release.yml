@@ -1,10 +1,6 @@
 name: Wallora Release
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "app/build.gradle.kts"
   workflow_dispatch:
 
 permissions:
@@ -20,6 +16,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
       - name: Set up JDK 17
         uses: actions/setup-java@v6
         with:
@@ -27,104 +28,20 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Read version
-        id: version
-        shell: bash
-        run: |
-          set -euo pipefail
-          VERSION_NAME="$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
-          VERSION_CODE="$(sed -n 's/.*versionCode = \([0-9][0-9]*\).*/\1/p' app/build.gradle.kts | head -n 1)"
-          [ -n "$VERSION_NAME" ] || { echo "Could not determine versionName."; exit 1; }
-          TAG="v${VERSION_NAME}"
-          echo "version=$VERSION_NAME" >> "$GITHUB_OUTPUT"
-          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-
-      - name: Check version bump
-        id: bump
-        shell: bash
-        run: |
-          set -euo pipefail
-          BEFORE="${{ github.event.before }}"
-          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if git diff --unified=0 "$BEFORE" HEAD -- app/build.gradle.kts | grep -Eq '^[+-].*version(Name|Code)'; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Check existing release
-        id: release
-        if: steps.bump.outputs.changed == 'true'
+      - name: Prepare release
         env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.version.outputs.tag }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python scripts/release.py --prepare
 
       - name: Build release APK
-        if: steps.bump.outputs.changed == 'true' && steps.release.outputs.exists != 'true'
         run: |
           chmod +x ./gradlew
           ./gradlew assembleDebug --stacktrace
 
-      - name: Prepare release APK
-        if: steps.bump.outputs.changed == 'true' && steps.release.outputs.exists != 'true'
-        id: apk
-        shell: bash
-        run: |
-          set -euo pipefail
-          APK="$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' | head -n 1)"
-          [ -n "$APK" ] || { echo "No APK was produced."; exit 1; }
-          NAME="Wallora_v${{ steps.version.outputs.version }}.apk"
-          cp "$APK" "$NAME"
-          echo "path=$NAME" >> "$GITHUB_OUTPUT"
-
-      - name: Generate release notes
-        if: steps.bump.outputs.changed == 'true' && steps.release.outputs.exists != 'true'
+      - name: Publish release
         env:
-          VERSION: ${{ steps.version.outputs.version }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          PREVIOUS_TAG="$(git tag --list 'v*' --sort=-version:refname | head -n 1)"
-          if [ -n "$PREVIOUS_TAG" ]; then
-            RANGE="${PREVIOUS_TAG}..HEAD"
-          else
-            RANGE="HEAD"
-          fi
-
-          {
-            echo "## Wallora v${VERSION}"
-            echo
-            echo "### Changes"
-            git log "$RANGE" --no-merges --pretty=format:'%s' \
-              | grep -Ev '^chore: bump version to ' \
-              | sed 's/^/- /' || true
-          } > RELEASE_NOTES.md
-
-          if ! grep -q '^[-] ' RELEASE_NOTES.md; then
-            echo "- No user-facing changes listed." >> RELEASE_NOTES.md
-          fi
-
-      - name: Create GitHub release
-        if: steps.bump.outputs.changed == 'true' && steps.release.outputs.exists != 'true'
-        env:
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.version.outputs.tag }}
-          VERSION: ${{ steps.version.outputs.version }}
-          APK_PATH: ${{ steps.apk.outputs.path }}
-        run: |
-          gh release create "$TAG" "$APK_PATH" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "Wallora v${VERSION}" \
-            --notes-file RELEASE_NOTES.md
+        run: python scripts/release.py --publish
