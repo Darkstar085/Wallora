@@ -37,6 +37,11 @@ android {
                 signingConfig = signingConfigs.getByName("wallora")
             }
         }
+        getByName("release") {
+            if (!keystorePath.isNullOrBlank() && !storePassword.isNullOrBlank() && !keyAlias.isNullOrBlank() && !keyPassword.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("wallora")
+            }
+        }
     }
 
     compileOptions {
