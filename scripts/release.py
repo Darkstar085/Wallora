@@ -8,7 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 def run(*args, check=True, capture=True):
-    return subprocess.run(args, cwd=ROOT, check=check, text=True, capture_output=capture)
+    result = subprocess.run(args, cwd=ROOT, check=check, text=True, capture_output=capture)
+    return result.stdout if capture else result
 
 def version():
     text = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
@@ -22,12 +23,13 @@ def version_changed():
     before = os.environ.get("GITHUB_EVENT_BEFORE", "")
     if not before or set(before) == {"0"}:
         return True
-    diff = run("git", "diff", "--unified=0", before, "HEAD", "--", "app/build.gradle.kts").stdout
+    diff = run("git", "diff", "--unified=0", before, "HEAD", "--", "app/build.gradle.kts")
     return bool(re.search(r"^[+-].*version(Name|Code)", diff, re.M))
 
 def release_exists(tag):
     repo = os.environ.get("GITHUB_REPOSITORY", "")
-    return run("gh", "release", "view", tag, "--repo", repo, check=False).returncode == 0
+    result = run("gh", "release", "view", tag, "--repo", repo, check=False)
+    return result.returncode == 0
 
 def previous_release_tag(version_name):
     tags = [t for t in run("git", "tag", "--list", "v*", "--sort=-version:refname").splitlines() if t]
@@ -57,7 +59,7 @@ def release_notes(version_name):
 
 def amend_changelog():
     result = run("git", "status", "--short", "--", "CHANGELOG.md")
-    if not result.stdout.strip():
+    if not result.strip():
         print("Changelog is already committed; no amend needed.")
         return
     run("git", "add", "CHANGELOG.md")
