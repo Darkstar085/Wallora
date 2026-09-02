@@ -96,22 +96,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          CHANGELOG=""
-          if [ -f CHANGELOG.md ]; then
-            CHANGELOG="CHANGELOG.md"
-          elif [ -f changelog.md ]; then
-            CHANGELOG="changelog.md"
+          PREVIOUS_TAG="$(git tag --list 'v*' --sort=-version:refname | head -n 1)"
+          if [ -n "$PREVIOUS_TAG" ]; then
+            RANGE="${PREVIOUS_TAG}..HEAD"
+          else
+            RANGE="HEAD"
           fi
 
-          [ -n "$CHANGELOG" ] || { echo "CHANGELOG.md is required for releases."; exit 1; }
+          {
+            echo "## Wallora v${VERSION}"
+            echo
+            echo "### Changes"
+            git log "$RANGE" --no-merges --pretty=format:'%s' \
+              | grep -Ev '^chore: bump version to ' \
+              | sed 's/^/- /' || true
+          } > RELEASE_NOTES.md
 
-          awk -v ver="$VERSION" '
-            $0 ~ "^## \\[" ver "\\]" { found=1; print; next }
-            found && /^## \\[/ { exit }
-            found { print }
-          ' "$CHANGELOG" > RELEASE_NOTES.md
-
-          [ -s RELEASE_NOTES.md ] || { echo "No changelog entry found for v$VERSION."; exit 1; }
+          if ! grep -q '^[-] ' RELEASE_NOTES.md; then
+            echo "- No user-facing changes listed." >> RELEASE_NOTES.md
+          fi
 
       - name: Create GitHub release
         if: steps.bump.outputs.changed == 'true' && steps.release.outputs.exists != 'true'
