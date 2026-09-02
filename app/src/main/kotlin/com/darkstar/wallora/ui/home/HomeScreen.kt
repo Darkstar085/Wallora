@@ -39,7 +39,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.ContentScale
@@ -83,7 +82,7 @@ fun HomeScreen(
     val categories = remember(wallpapers) { listOf("All") + wallpapers.map { it.category }.distinct().sorted() }
     val filtered = wallpapers.filter { selectedCategory == "All" || it.category == selectedCategory }
     val randomized = remember(wallpapers) { wallpapers.shuffled() }
-    val randomizedFiltered = randomized.filter { selectedCategory == "All" || it.category == selectedCategory }
+    val displayedWallpapers = if (selectedCategory == "All") randomized else filtered
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -116,7 +115,7 @@ fun HomeScreen(
                 when {
                     loading -> LoadingPanel()
                     error != null -> ErrorPanel(error!!, ::load)
-                    randomized.isNotEmpty() -> FeaturedCarousel(randomized, favoriteStore, onWallpaperClick)
+                    displayedWallpapers.isNotEmpty() -> FeaturedCarousel(displayedWallpapers, favoriteStore, onWallpaperClick)
                     else -> EmptyPanel("No wallpapers found")
                 }
                 Spacer(Modifier.height(22.dp))
@@ -154,7 +153,7 @@ fun HomeScreen(
         if (loading) {
             items(6) { LoadingGridItem() }
         } else {
-            items(randomizedFiltered) { wallpaper -> WallpaperCard(wallpaper, favoriteStore) { onWallpaperClick(wallpaper) } }
+            items(displayedWallpapers) { wallpaper -> WallpaperCard(wallpaper, favoriteStore) { onWallpaperClick(wallpaper) } }
         }
     }
 }
