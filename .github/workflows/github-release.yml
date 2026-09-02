@@ -5,8 +5,6 @@ on:
     branches: [main]
     paths:
       - "app/build.gradle.kts"
-      - "CHANGELOG.md"
-      - "changelog.md"
   workflow_dispatch:
 
 permissions:
@@ -71,17 +69,6 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Find previous release
-        id: previous
-        if: steps.bump.outputs.changed == 'true' && steps.release.outputs.exists != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          PREVIOUS_TAG="$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName // empty')"
-          echo "tag=$PREVIOUS_TAG" >> "$GITHUB_OUTPUT"
-
       - name: Build release APK
         if: steps.bump.outputs.changed == 'true' && steps.release.outputs.exists != 'true'
         run: |
@@ -103,27 +90,26 @@ jobs:
       - name: Generate release notes
         if: steps.bump.outputs.changed == 'true' && steps.release.outputs.exists != 'true'
         env:
-          PREVIOUS_TAG: ${{ steps.previous.outputs.tag }}
           VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
+          CHANGELOG=""
           if [ -f CHANGELOG.md ]; then
-            cp CHANGELOG.md RELEASE_NOTES.md
+            CHANGELOG="CHANGELOG.md"
           elif [ -f changelog.md ]; then
-            cp changelog.md RELEASE_NOTES.md
-          else
-            {
-              echo "## What's Changed"
-              echo
-              if [ -n "$PREVIOUS_TAG" ]; then
-                git log --no-merges --pretty=format:'- %s' "${PREVIOUS_TAG}..HEAD"
-              else
-                git log --no-merges --pretty=format:'- %s'
-              fi
-              echo
-            } > RELEASE_NOTES.md
+            CHANGELOG="changelog.md"
           fi
+
+          [ -n "$CHANGELOG" ] || { echo "CHANGELOG.md is required for releases."; exit 1; }
+
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { found=1; print; next }
+            found && /^## \\[/ { exit }
+            found { print }
+          ' "$CHANGELOG" > RELEASE_NOTES.md
+
+          [ -s RELEASE_NOTES.md ] || { echo "No changelog entry found for v$VERSION."; exit 1; }
 
       - name: Create GitHub release
         if: steps.bump.outputs.changed == 'true' && steps.release.outputs.exists != 'true'
