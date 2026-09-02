@@ -11,8 +11,32 @@ android {
         applicationId = "com.darkstar.wallora"
         minSdk = 26
         targetSdk = 37
-        versionCode = 8
-        versionName = "0.6.2"
+        versionCode = 7
+        versionName = "0.6.1"
+    }
+
+    val keystorePath = System.getenv("WALLORA_KEYSTORE_PATH")
+    val storePassword = System.getenv("WALLORA_STORE_PASSWORD")
+    val keyAlias = System.getenv("WALLORA_KEY_ALIAS")
+    val keyPassword = System.getenv("WALLORA_KEY_PASSWORD")
+
+    signingConfigs {
+        create("wallora") {
+            if (!keystorePath.isNullOrBlank() && !storePassword.isNullOrBlank() && !keyAlias.isNullOrBlank() && !keyPassword.isNullOrBlank()) {
+                storeFile = file(keystorePath)
+                this.storePassword = storePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            if (!keystorePath.isNullOrBlank() && !storePassword.isNullOrBlank() && !keyAlias.isNullOrBlank() && !keyPassword.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("wallora")
+            }
+        }
     }
 
     compileOptions {
