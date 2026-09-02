@@ -50,6 +50,7 @@ import com.darkstar.wallora.data.WallpaperRepository
 import com.darkstar.wallora.model.Wallpaper
 import com.darkstar.wallora.ui.components.WallpaperCard
 import com.darkstar.wallora.ui.components.WallpaperImage
+import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(
@@ -81,7 +82,8 @@ fun HomeScreen(
 
     val categories = remember(wallpapers) { listOf("All") + wallpapers.map { it.category }.distinct().sorted() }
     val filtered = wallpapers.filter { selectedCategory == "All" || it.category == selectedCategory }
-    val featured = remember(wallpapers) { wallpapers.shuffled() }
+    val randomized = remember(wallpapers) { wallpapers.shuffled() }
+    val randomizedFiltered = randomized.filter { selectedCategory == "All" || it.category == selectedCategory }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -114,7 +116,7 @@ fun HomeScreen(
                 when {
                     loading -> LoadingPanel()
                     error != null -> ErrorPanel(error!!, ::load)
-                    featured.isNotEmpty() -> FeaturedCarousel(featured, favoriteStore, onWallpaperClick)
+                    randomized.isNotEmpty() -> FeaturedCarousel(randomized, favoriteStore, onWallpaperClick)
                     else -> EmptyPanel("No wallpapers found")
                 }
                 Spacer(Modifier.height(22.dp))
@@ -142,7 +144,7 @@ fun HomeScreen(
                 }
                 Spacer(Modifier.height(22.dp))
                 Text(
-                    "Latest wallpapers",
+                    "Wallpapers",
                     color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.headlineSmall,
                 )
@@ -152,7 +154,7 @@ fun HomeScreen(
         if (loading) {
             items(6) { LoadingGridItem() }
         } else {
-            items(filtered) { wallpaper -> WallpaperCard(wallpaper, favoriteStore) { onWallpaperClick(wallpaper) } }
+            items(randomizedFiltered) { wallpaper -> WallpaperCard(wallpaper, favoriteStore) { onWallpaperClick(wallpaper) } }
         }
     }
 }
@@ -164,6 +166,16 @@ private fun FeaturedCarousel(
     onWallpaperClick: (Wallpaper) -> Unit,
 ) {
     val pagerState = rememberPagerState(pageCount = { wallpapers.size })
+
+    LaunchedEffect(pagerState, wallpapers.size) {
+        while (wallpapers.size > 1) {
+            delay(4_000)
+            if (!pagerState.isScrollInProgress) {
+                val nextPage = (pagerState.currentPage + 1) % wallpapers.size
+                pagerState.animateScrollToPage(nextPage)
+            }
+        }
+    }
 
     Column {
         HorizontalPager(
@@ -191,20 +203,6 @@ private fun FeaturedCarousel(
                             tint = Color.White,
                         )
                     }
-                }
-            }
-        }
-        if (wallpapers.size > 1) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-            ) {
-                repeat(minOf(wallpapers.size, 7)) { index ->
-                    Box(
-                        Modifier.size(if (index == pagerState.currentPage) 18.dp else 7.dp, 7.dp)
-                            .clip(CircleShape)
-                            .background(if (index == pagerState.currentPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)),
-                    )
                 }
             }
         }

@@ -54,10 +54,12 @@ fun ExploreScreen(
     }
 
     val categories = remember(wallpapers) { listOf("All") + wallpapers.map { it.category }.distinct().sorted() }
-    val filtered = wallpapers.filter {
-        (category == "All" || it.category == category) &&
-            (query.isBlank() || it.title.contains(query, true) || it.category.contains(query, true))
-    }
+    val filtered = wallpapers
+        .filter {
+            (category == "All" || it.category == category) &&
+                (query.isBlank() || it.title.contains(query, true) || it.category.contains(query, true))
+        }
+        .sortedByDescending { it.addedAt ?: "" }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(top = contentPadding.calculateTopPadding(), bottom = contentPadding.calculateBottomPadding()),
@@ -89,7 +91,7 @@ fun ExploreScreen(
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Wallpapers", color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Latest wallpapers", color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
                 Text("${filtered.size}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }

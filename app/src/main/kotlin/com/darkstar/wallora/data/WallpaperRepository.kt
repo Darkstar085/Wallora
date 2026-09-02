@@ -51,6 +51,7 @@ class WallpaperRepository(
                         format = item.getString("format"),
                         path = item.getString("path"),
                         url = item.getString("url"),
+                        addedAt = item.optString("added_at").takeIf { it.isNotBlank() },
                     ),
                 )
             }

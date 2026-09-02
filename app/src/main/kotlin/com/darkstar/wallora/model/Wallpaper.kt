@@ -9,4 +9,5 @@ data class Wallpaper(
     val format: String,
     val path: String,
     val url: String,
+    val addedAt: String? = null,
 )
