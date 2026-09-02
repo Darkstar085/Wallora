@@ -4,12 +4,19 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths:
+      - "app/**"
+      - "gradle/**"
+      - "gradle.properties"
+      - "settings.gradle.kts"
+      - "build.gradle.kts"
+      - "gradlew"
+      - "gradlew.bat"
 
 permissions:
   contents: read
 
 env:
-  TG_CHAT_ID: "-1001474066247"
   REPO_URL: "https://github.com/${{ github.repository }}"
 
 jobs:
@@ -52,16 +59,21 @@ jobs:
           if-no-files-found: error
 
       - name: Send APK to Telegram
-        if: success()
+        if: success() && env.TG_BOT_KEY != '' && env.TG_CHAT_ID != ''
         env:
-          TG_BOT_KEY: ${{ secrets.TG_BOT_KEY }}
+          TG_BOT_KEY: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           APK_PATH: ${{ steps.apk.outputs.path }}
           APK_NAME: ${{ steps.apk.outputs.name }}
         shell: bash
         run: |
           set -euo pipefail
-          [ -n "${TG_BOT_KEY:-}" ] || { echo "TG_BOT_KEY secret is not configured."; exit 1; }
-          curl --fail --silent --show-error --retry 3 \
+          curl --fail --show-error --progress-bar \
+            --connect-timeout 15 \
+            --max-time 900 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-connrefused \
             -F "document=@${APK_PATH};filename=${APK_NAME}" \
             -F "chat_id=${TG_CHAT_ID}" \
             --form-string "caption=📦 Wallora APK\nCommit: ${GITHUB_SHA::8}\n[View commit](${REPO_URL}/commit/${GITHUB_SHA})" \
