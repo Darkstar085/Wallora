@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +31,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.darkstar.wallora.data.FavoriteStore
+import com.darkstar.wallora.data.ImageCacheManager
 import com.darkstar.wallora.model.Wallpaper
+
+val LocalImageCacheManager = staticCompositionLocalOf<ImageCacheManager> {
+    error("ImageCacheManager is not provided")
+}
 
 @Composable
 fun WallpaperCard(wallpaper: Wallpaper, favoriteStore: FavoriteStore, onClick: () -> Unit) {
@@ -59,8 +65,10 @@ fun WallpaperCard(wallpaper: Wallpaper, favoriteStore: FavoriteStore, onClick: (
 
 @Composable
 fun WallpaperImage(wallpaper: Wallpaper, modifier: Modifier, contentScale: ContentScale) {
+    val cache = LocalImageCacheManager.current
     SubcomposeAsyncImage(
-        model = wallpaper.url,
+        model = cache.imageRequest(wallpaper.url),
+        imageLoader = cache.imageLoader,
         contentDescription = wallpaper.title,
         modifier = modifier,
         contentScale = contentScale,
