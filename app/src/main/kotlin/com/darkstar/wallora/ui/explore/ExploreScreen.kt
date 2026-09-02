@@ -33,6 +33,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.darkstar.wallora.data.FavoriteStore
@@ -79,7 +81,9 @@ fun ExploreScreen(
                 )
                 IconButton(
                     onClick = { searchOpen = !searchOpen },
-                    contentDescription = if (searchOpen) "Close search" else "Search wallpapers",
+                    modifier = Modifier.semantics {
+                        contentDescription = if (searchOpen) "Close search" else "Search wallpapers"
+                    },
                 ) {
                     Icon(
                         if (searchOpen) Icons.Outlined.Close else Icons.Outlined.Search,
