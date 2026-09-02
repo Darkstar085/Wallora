@@ -1,0 +1,22 @@
+name: Cleanup GitHub Actions
+
+on:
+  schedule:
+    - cron: "30 4 1 * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    name: Cleanup old workflow runs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          keep_minimum_runs: 3
+          delete_run_by_conclusion_pattern: failure,skipped,cancelled,timed_out,action_required,stale
