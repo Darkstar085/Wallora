@@ -58,10 +58,6 @@ fun WalloraApp(preferences: PreferencesStore) {
     var selectedWallpaper by remember { mutableStateOf<Wallpaper?>(null) }
 
     CompositionLocalProvider(LocalImageCacheManager provides imageCache) {
-        if (selectedWallpaper != null) {
-            WallpaperPreviewScreen(selectedWallpaper!!, favorites.contains(selectedWallpaper!!.id), preferences, repository, { selectedWallpaper = null }, { id -> favorites.toggle(id) })
-            return@CompositionLocalProvider
-        }
         Scaffold(bottomBar = {
             Surface(Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.bottom_bar_horizontal_padding), vertical = dimensionResource(R.dimen.bottom_bar_vertical_padding)), shape = RoundedCornerShape(dimensionResource(R.dimen.bottom_bar_corner_radius)), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.96f), tonalElevation = dimensionResource(R.dimen.bottom_bar_elevation)) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.bottom_bar_content_horizontal_padding), vertical = dimensionResource(R.dimen.bottom_bar_content_vertical_padding)), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
@@ -87,6 +83,19 @@ fun WalloraApp(preferences: PreferencesStore) {
                             AppTab.FAVORITES -> FavoritesScreen(repository, favorites, padding) { selectedWallpaper = it }
                             AppTab.SETTINGS -> SettingsScreen(padding, preferences, imageCache)
                         }
+                    }
+                }
+
+                selectedWallpaper?.let { wallpaper ->
+                    Box(Modifier.fillMaxSize().zIndex(2f)) {
+                        WallpaperPreviewScreen(
+                            wallpaper,
+                            favorites.contains(wallpaper.id),
+                            preferences,
+                            repository,
+                            { selectedWallpaper = null },
+                            { id -> favorites.toggle(id) }
+                        )
                     }
                 }
             }
