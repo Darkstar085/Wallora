@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
@@ -36,7 +35,6 @@ import com.darkstar.wallora.data.PreferencesStore
 import com.darkstar.wallora.data.WallpaperRepository
 import com.darkstar.wallora.model.Wallpaper
 import com.darkstar.wallora.ui.components.LocalImageCacheManager
-import com.darkstar.wallora.ui.explore.ExploreScreen
 import com.darkstar.wallora.ui.favorites.FavoritesScreen
 import com.darkstar.wallora.ui.home.HomeScreen
 import com.darkstar.wallora.ui.preview.WallpaperPreviewScreen
@@ -44,7 +42,6 @@ import com.darkstar.wallora.ui.settings.SettingsScreen
 
 private enum class AppTab(val label: String) {
     HOME("Home"),
-    EXPLORE("Explore"),
     FAVORITES("Favorites"),
     SETTINGS("Settings"),
 }
@@ -107,7 +104,6 @@ fun WalloraApp(preferences: PreferencesStore) {
                                     Icon(
                                         imageVector = when (tab) {
                                             AppTab.HOME -> Icons.Outlined.Home
-                                            AppTab.EXPLORE -> Icons.Outlined.Explore
                                             AppTab.FAVORITES -> Icons.Outlined.FavoriteBorder
                                             AppTab.SETTINGS -> Icons.Outlined.Settings
                                         },
@@ -138,7 +134,6 @@ fun WalloraApp(preferences: PreferencesStore) {
             Box(Modifier.fillMaxSize()) {
                 when (selectedTab) {
                     AppTab.HOME -> HomeScreen(repository, favorites, padding) { selectedWallpaper = it }
-                    AppTab.EXPLORE -> ExploreScreen(repository, favorites, padding) { selectedWallpaper = it }
                     AppTab.FAVORITES -> FavoritesScreen(repository, favorites, padding) { selectedWallpaper = it }
                     AppTab.SETTINGS -> SettingsScreen(padding, preferences, imageCache)
                 }
