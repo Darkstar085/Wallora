@@ -1,0 +1,4 @@
+<resources>
+    <integer name="featured_auto_scroll_delay_ms">4000</integer>
+    <integer name="loading_placeholder_count">6</integer>
+</resources>

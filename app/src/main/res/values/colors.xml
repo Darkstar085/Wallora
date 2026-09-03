@@ -1,0 +1,9 @@
+<resources>
+    <color name="preview_background">#000000</color>
+    <color name="preview_overlay">#F20D0B10</color>
+    <color name="preview_text">#FFFFFF</color>
+    <color name="preview_secondary_text">#FFD0C8D4</color>
+    <color name="favorite_scrim">#6B000000</color>
+    <color name="favorite_button_light_scrim">#29FFFFFF</color>
+    <color name="transparent">#00000000</color>
+</resources>

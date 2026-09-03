@@ -26,38 +26,26 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import coil3.compose.SubcomposeAsyncImage
+import com.darkstar.wallora.R
 import com.darkstar.wallora.data.FavoriteStore
 import com.darkstar.wallora.data.ImageCacheManager
 import com.darkstar.wallora.model.Wallpaper
 
-val LocalImageCacheManager = staticCompositionLocalOf<ImageCacheManager> {
-    error("ImageCacheManager is not provided")
-}
+val LocalImageCacheManager = staticCompositionLocalOf<ImageCacheManager> { error("ImageCacheManager is not provided") }
 
 @Composable
 fun WallpaperCard(wallpaper: Wallpaper, favoriteStore: FavoriteStore, onClick: () -> Unit) {
     var favorite by remember(wallpaper.id) { mutableStateOf(favoriteStore.contains(wallpaper.id)) }
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(220.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-    ) {
+    Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().height(dimensionResource(R.dimen.card_height)), shape = RoundedCornerShape(dimensionResource(R.dimen.card_corner_radius)), color = MaterialTheme.colorScheme.surfaceVariant) {
         Box {
             WallpaperImage(wallpaper, Modifier.fillMaxSize(), ContentScale.Crop)
-            IconButton(
-                onClick = { favorite = !favorite; favoriteStore.toggle(wallpaper.id) },
-                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).background(Color.Black.copy(alpha = 0.42f), CircleShape),
-            ) {
-                Icon(
-                    if (favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (favorite) "Remove from favorites" else "Add to favorites",
-                    tint = Color.White,
-                )
+            IconButton(onClick = { favorite = !favorite; favoriteStore.toggle(wallpaper.id) }, modifier = Modifier.align(Alignment.TopEnd).padding(dimensionResource(R.dimen.favorite_button_padding)).background(colorResource(R.color.favorite_scrim), CircleShape)) {
+                Icon(if (favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, contentDescription = stringResource(if (favorite) R.string.remove_from_favorites else R.string.add_to_favorites), tint = colorResource(R.color.preview_text))
             }
         }
     }
@@ -67,20 +55,9 @@ fun WallpaperCard(wallpaper: Wallpaper, favoriteStore: FavoriteStore, onClick: (
 fun WallpaperImage(wallpaper: Wallpaper, modifier: Modifier, contentScale: ContentScale) {
     val cache = LocalImageCacheManager.current
     SubcomposeAsyncImage(
-        model = cache.imageRequest(wallpaper.url),
-        imageLoader = cache.imageLoader,
-        contentDescription = wallpaper.title,
-        modifier = modifier,
-        contentScale = contentScale,
-        loading = {
-            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
-            }
-        },
-        error = {
-            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
-                Text("Image unavailable", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
-            }
-        },
+        model = cache.imageRequest(wallpaper.url), imageLoader = cache.imageLoader, contentDescription = wallpaper.title,
+        modifier = modifier, contentScale = contentScale,
+        loading = { Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(dimensionResource(R.dimen.progress_icon_size)), strokeWidth = dimensionResource(R.dimen.progress_stroke_width)) } },
+        error = { Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) { Text(stringResource(R.string.image_unavailable), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium) } },
     )
 }
