@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,20 +48,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.statusBarsPadding
 import com.darkstar.wallora.R
+import com.darkstar.wallora.data.PreferencesStore
 import com.darkstar.wallora.data.WallpaperApplier
+import com.darkstar.wallora.data.WallpaperDownloader
 import com.darkstar.wallora.model.Wallpaper
 import com.darkstar.wallora.model.WallpaperTarget
 import com.darkstar.wallora.ui.components.WallpaperImage
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @Composable
-fun WallpaperPreviewScreen(wallpaper: Wallpaper, isFavorite: Boolean, onBack: () -> Unit, onToggleFavorite: () -> Unit) {
+fun WallpaperPreviewScreen(wallpaper: Wallpaper, isFavorite: Boolean, preferences: PreferencesStore, onBack: () -> Unit, onToggleFavorite: () -> Unit) {
     val context = LocalContext.current.applicationContext
     val scope = rememberCoroutineScope()
     var favorite by remember(wallpaper.id) { mutableStateOf(isFavorite) }
     var applying by remember { mutableStateOf(false) }
+    var downloading by remember { mutableStateOf(false) }
     var resultMessage by remember { mutableStateOf<String?>(null) }
     var showTargetDialog by remember { mutableStateOf(false) }
+    var showInfoDialog by remember { mutableStateOf(false) }
 
     BackHandler { onBack() }
 
@@ -76,6 +83,18 @@ fun WallpaperPreviewScreen(wallpaper: Wallpaper, isFavorite: Boolean, onBack: ()
         }
     }
 
+    fun downloadWallpaper() {
+        if (downloading) return
+        downloading = true
+        resultMessage = null
+        scope.launch {
+            WallpaperDownloader(context).download(wallpaper, preferences.downloadLocationUri)
+                .onSuccess { resultMessage = "Saved ${wallpaper.filename}" }
+                .onFailure { resultMessage = it.message ?: "Couldn't download wallpaper" }
+            downloading = false
+        }
+    }
+
     Surface(modifier = Modifier.fillMaxSize(), color = colorResource(R.color.preview_background)) {
         Box(Modifier.fillMaxSize()) {
             WallpaperImage(wallpaper, Modifier.fillMaxSize(), ContentScale.Crop)
@@ -89,8 +108,14 @@ fun WallpaperPreviewScreen(wallpaper: Wallpaper, isFavorite: Boolean, onBack: ()
                     Text(stringResource(R.string.wallpaper_metadata, wallpaper.category, wallpaper.width, wallpaper.height), color = colorResource(R.color.preview_secondary_text))
                     Spacer(Modifier.size(dimensionResource(R.dimen.preview_content_spacing)))
                     Row(horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.preview_button_spacing)), verticalAlignment = Alignment.CenterVertically) {
-                        Button(onClick = { showTargetDialog = true }, enabled = !applying, modifier = Modifier.weight(1f)) {
+                        Button(onClick = { showTargetDialog = true }, enabled = !applying && !downloading, modifier = Modifier.weight(1f)) {
                             if (applying) CircularProgressIndicator(modifier = Modifier.size(dimensionResource(R.dimen.preview_button_icon_size)), strokeWidth = dimensionResource(R.dimen.progress_stroke_width)) else Text(stringResource(R.string.set_wallpaper))
+                        }
+                        IconButton(onClick = ::downloadWallpaper, enabled = !downloading, modifier = Modifier.size(dimensionResource(R.dimen.preview_favorite_size)).background(colorResource(R.color.favorite_button_light_scrim), CircleShape)) {
+                            if (downloading) CircularProgressIndicator(modifier = Modifier.size(dimensionResource(R.dimen.preview_button_icon_size)), strokeWidth = dimensionResource(R.dimen.progress_stroke_width)) else Icon(Icons.Outlined.Download, contentDescription = "Download", tint = colorResource(R.color.preview_text))
+                        }
+                        IconButton(onClick = { showInfoDialog = true }, modifier = Modifier.size(dimensionResource(R.dimen.preview_favorite_size)).background(colorResource(R.color.favorite_button_light_scrim), CircleShape)) {
+                            Icon(Icons.Outlined.Info, contentDescription = "Info", tint = colorResource(R.color.preview_text))
                         }
                         IconButton(onClick = { favorite = !favorite; onToggleFavorite() }, modifier = Modifier.size(dimensionResource(R.dimen.preview_favorite_size)).background(colorResource(R.color.favorite_button_light_scrim), CircleShape)) {
                             Icon(if (favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, contentDescription = stringResource(R.string.favorite), tint = colorResource(R.color.preview_text))
@@ -102,35 +127,41 @@ fun WallpaperPreviewScreen(wallpaper: Wallpaper, isFavorite: Boolean, onBack: ()
                     }
                 }
             }
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(dimensionResource(R.dimen.preview_back_padding)).background(colorResource(R.color.favorite_scrim), CircleShape),
-            ) {
+            IconButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(dimensionResource(R.dimen.preview_back_padding)).background(colorResource(R.color.favorite_scrim), CircleShape)) {
                 Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back), tint = colorResource(R.color.preview_text))
             }
         }
     }
 
     if (showTargetDialog) {
+        AlertDialog(onDismissRequest = { showTargetDialog = false }, title = { Text(stringResource(R.string.set_wallpaper)) }, text = { Column { WallpaperTarget.entries.forEach { target -> Row(Modifier.fillMaxWidth().clickable { applyWallpaper(target) }.padding(vertical = dimensionResource(R.dimen.settings_dialog_row_padding)), verticalAlignment = Alignment.CenterVertically) { RadioButton(false, { applyWallpaper(target) }); Text(target.label(context), Modifier.padding(start = dimensionResource(R.dimen.settings_dialog_label_padding))) } } } }, confirmButton = { TextButton(onClick = { showTargetDialog = false }) { Text(stringResource(R.string.cancel)) } })
+    }
+
+    if (showInfoDialog) {
         AlertDialog(
-            onDismissRequest = { showTargetDialog = false },
-            title = { Text(stringResource(R.string.set_wallpaper)) },
+            onDismissRequest = { showInfoDialog = false },
+            title = { Text(wallpaper.title) },
             text = {
-                Column {
-                    WallpaperTarget.entries.forEach { target ->
-                        Row(
-                            Modifier.fillMaxWidth().clickable { applyWallpaper(target) }.padding(vertical = dimensionResource(R.dimen.settings_dialog_row_padding)),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(selected = false, onClick = { applyWallpaper(target) })
-                            Text(target.label(context), Modifier.padding(start = dimensionResource(R.dimen.settings_dialog_label_padding)))
-                        }
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.tiny_spacing))) {
+                    Text("Filename: ${wallpaper.filename}")
+                    Text("Dimensions: ${wallpaper.width} × ${wallpaper.height}")
+                    Text("File size: ${formatBytes(wallpaper.fileSizeBytes)}")
+                    Text("Format: ${wallpaper.format.uppercase(Locale.US)}")
                 }
             },
-            confirmButton = { TextButton(onClick = { showTargetDialog = false }) { Text(stringResource(R.string.cancel)) } },
+            confirmButton = { TextButton(onClick = { showInfoDialog = false }) { Text(stringResource(R.string.close)) } },
         )
     }
+}
+
+private fun formatBytes(bytes: Long): String {
+    if (bytes <= 0) return "Unknown"
+    if (bytes < 1024) return "$bytes B"
+    val units = arrayOf("KB", "MB", "GB")
+    var value = bytes.toDouble()
+    var index = -1
+    while (value >= 1024 && index < units.lastIndex) { value /= 1024; index++ }
+    return String.format(Locale.US, "%.1f %s", value, units[index])
 }
 
 private fun WallpaperTarget.label(context: Context): String = when (this) {

@@ -42,15 +42,8 @@ import com.darkstar.wallora.ui.home.HomeScreen
 import com.darkstar.wallora.ui.preview.WallpaperPreviewScreen
 import com.darkstar.wallora.ui.settings.SettingsScreen
 
-private enum class AppTab {
-    HOME, FAVORITES, SETTINGS;
-
-    @Composable
-    fun label(): String = when (this) {
-        HOME -> stringResource(R.string.tab_home)
-        FAVORITES -> stringResource(R.string.tab_favorites)
-        SETTINGS -> stringResource(R.string.tab_settings)
-    }
+private enum class AppTab { HOME, FAVORITES, SETTINGS;
+    @Composable fun label(): String = when (this) { HOME -> stringResource(R.string.tab_home); FAVORITES -> stringResource(R.string.tab_favorites); SETTINGS -> stringResource(R.string.tab_settings) }
 }
 
 @Composable
@@ -64,39 +57,25 @@ fun WalloraApp(preferences: PreferencesStore) {
 
     CompositionLocalProvider(LocalImageCacheManager provides imageCache) {
         if (selectedWallpaper != null) {
-            WallpaperPreviewScreen(selectedWallpaper!!, favorites.contains(selectedWallpaper!!.id), { selectedWallpaper = null }, { favorites.toggle(selectedWallpaper!!.id) })
+            WallpaperPreviewScreen(selectedWallpaper!!, favorites.contains(selectedWallpaper!!.id), preferences, { selectedWallpaper = null }, { favorites.toggle(selectedWallpaper!!.id) })
             return@CompositionLocalProvider
         }
-        Scaffold(
-            bottomBar = {
-                Surface(
-                    Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.bottom_bar_horizontal_padding), vertical = dimensionResource(R.dimen.bottom_bar_vertical_padding)),
-                    shape = RoundedCornerShape(dimensionResource(R.dimen.bottom_bar_corner_radius)),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.96f),
-                    tonalElevation = dimensionResource(R.dimen.bottom_bar_elevation),
-                ) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.bottom_bar_content_horizontal_padding), vertical = dimensionResource(R.dimen.bottom_bar_content_vertical_padding)), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                        AppTab.entries.forEach { tab ->
-                            val selected = selectedTab == tab
-                            Surface(onClick = { selectedTab = tab }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(dimensionResource(R.dimen.bottom_bar_item_corner_radius)), color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent) {
-                                Column(Modifier.padding(vertical = dimensionResource(R.dimen.bottom_bar_item_vertical_padding)), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.bottom_bar_item_spacing))) {
-                                    val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                    Icon(
-                                        imageVector = when (tab) {
-                                            AppTab.HOME -> Icons.Outlined.Home
-                                            AppTab.FAVORITES -> Icons.Outlined.FavoriteBorder
-                                            AppTab.SETTINGS -> Icons.Outlined.Settings
-                                        },
-                                        contentDescription = tab.label(), tint = tint, modifier = Modifier.size(dimensionResource(R.dimen.bottom_bar_icon_size)),
-                                    )
-                                    Text(tab.label(), color = tint, style = MaterialTheme.typography.labelSmall)
-                                }
+        Scaffold(bottomBar = {
+            Surface(Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.bottom_bar_horizontal_padding), vertical = dimensionResource(R.dimen.bottom_bar_vertical_padding)), shape = RoundedCornerShape(dimensionResource(R.dimen.bottom_bar_corner_radius)), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.96f), tonalElevation = dimensionResource(R.dimen.bottom_bar_elevation)) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.bottom_bar_content_horizontal_padding), vertical = dimensionResource(R.dimen.bottom_bar_content_vertical_padding)), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                    AppTab.entries.forEach { tab ->
+                        val selected = selectedTab == tab
+                        Surface(onClick = { selectedTab = tab }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(dimensionResource(R.dimen.bottom_bar_item_corner_radius)), color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent) {
+                            Column(Modifier.padding(vertical = dimensionResource(R.dimen.bottom_bar_item_vertical_padding)), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.bottom_bar_item_spacing))) {
+                                val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                Icon(when (tab) { AppTab.HOME -> Icons.Outlined.Home; AppTab.FAVORITES -> Icons.Outlined.FavoriteBorder; AppTab.SETTINGS -> Icons.Outlined.Settings }, contentDescription = tab.label(), tint = tint, modifier = Modifier.size(dimensionResource(R.dimen.bottom_bar_icon_size)))
+                                Text(tab.label(), color = tint, style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
                 }
-            },
-        ) { padding ->
+            }
+        }) { padding ->
             Box(Modifier.fillMaxSize()) {
                 when (selectedTab) {
                     AppTab.HOME -> HomeScreen(repository, favorites, padding) { selectedWallpaper = it }

@@ -15,6 +15,9 @@ class PreferencesStore(context: Context) {
     var dynamicColors by mutableStateOf(preferences.getBoolean(KEY_DYNAMIC_COLORS, true))
         private set
 
+    var downloadLocationUri by mutableStateOf(preferences.getString(KEY_DOWNLOAD_LOCATION, null))
+        private set
+
     fun updateThemeMode(value: ThemeMode) {
         themeMode = value
         preferences.edit().putString(KEY_THEME, value.name).apply()
@@ -25,6 +28,11 @@ class PreferencesStore(context: Context) {
         preferences.edit().putBoolean(KEY_DYNAMIC_COLORS, value).apply()
     }
 
+    fun updateDownloadLocationUri(value: String?) {
+        downloadLocationUri = value
+        preferences.edit().putString(KEY_DOWNLOAD_LOCATION, value).apply()
+    }
+
     private fun readThemeMode(): ThemeMode = runCatching {
         ThemeMode.valueOf(preferences.getString(KEY_THEME, ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name)
     }.getOrDefault(ThemeMode.SYSTEM)
@@ -33,5 +41,6 @@ class PreferencesStore(context: Context) {
         private const val PREFERENCES_NAME = "wallora_preferences"
         private const val KEY_THEME = "theme_mode"
         private const val KEY_DYNAMIC_COLORS = "dynamic_colors"
+        private const val KEY_DOWNLOAD_LOCATION = "download_location_uri"
     }
 }

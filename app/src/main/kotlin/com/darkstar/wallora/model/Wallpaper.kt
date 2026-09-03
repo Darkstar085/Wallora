@@ -9,5 +9,7 @@ data class Wallpaper(
     val format: String,
     val path: String,
     val url: String,
+    val filename: String = path.substringAfterLast('/'),
+    val fileSizeBytes: Long = 0L,
     val addedAt: String? = null,
 )

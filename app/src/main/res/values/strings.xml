@@ -34,6 +34,12 @@
     <string name="apply_wallpaper">Apply wallpaper</string>
     <string name="cache">Cache</string>
     <string name="wallpaper_cache">Wallpaper cache</string>
+    <string name="downloads">Downloads</string>
+    <string name="download_location">Download location</string>
+    <string name="default_download_location">Pictures/Wallora</string>
+    <string name="download">Download</string>
+    <string name="info">Info</string>
+    <string name="close">Close</string>
     <string name="about">About</string>
     <string name="about_description">A simple open-source wallpaper app built with Kotlin and Jetpack Compose.</string>
     <string name="wallpaper_catalog">Wallpaper catalog</string>
