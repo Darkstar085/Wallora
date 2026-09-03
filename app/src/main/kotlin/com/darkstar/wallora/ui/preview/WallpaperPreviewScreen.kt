@@ -1,7 +1,12 @@
 package com.darkstar.wallora.ui.preview
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,7 +55,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.core.content.ContextCompat
 import com.darkstar.wallora.R
+import com.darkstar.wallora.data.NotificationHelper
 import com.darkstar.wallora.data.PreferencesStore
 import com.darkstar.wallora.data.WallpaperApplier
 import com.darkstar.wallora.data.WallpaperDownloader
@@ -81,6 +88,35 @@ fun WallpaperPreviewScreen(wallpaper: Wallpaper, isFavorite: Boolean, preference
     }
     val currentWallpaper = wallpapers.getOrElse(pagerState.currentPage) { wallpaper }
 
+    fun performDownload() {
+        if (downloading) return
+        downloading = true
+        resultMessage = null
+        scope.launch {
+            WallpaperDownloader(context).download(currentWallpaper, preferences.downloadLocationUri)
+                .onSuccess {
+                    resultMessage = "Saved ${currentWallpaper.filename}"
+                    NotificationHelper.showDownloadComplete(context, currentWallpaper.filename)
+                }
+                .onFailure { resultMessage = it.message ?: "Couldn't download wallpaper" }
+            downloading = false
+        }
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { performDownload() }
+
+    fun downloadWallpaper() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            performDownload()
+        }
+    }
+
     BackHandler { onBack() }
 
     fun applyWallpaper(target: WallpaperTarget) {
@@ -93,18 +129,6 @@ fun WallpaperPreviewScreen(wallpaper: Wallpaper, isFavorite: Boolean, preference
                 .onSuccess { resultMessage = context.getString(R.string.wallpaper_applied, target.label(context)) }
                 .onFailure { resultMessage = it.message ?: context.getString(R.string.couldnt_apply_wallpaper) }
             applying = false
-        }
-    }
-
-    fun downloadWallpaper() {
-        if (downloading) return
-        downloading = true
-        resultMessage = null
-        scope.launch {
-            WallpaperDownloader(context).download(currentWallpaper, preferences.downloadLocationUri)
-                .onSuccess { resultMessage = "Saved ${currentWallpaper.filename}" }
-                .onFailure { resultMessage = it.message ?: "Couldn't download wallpaper" }
-            downloading = false
         }
     }
 
