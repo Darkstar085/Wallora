@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.darkstar.wallora.R
 import com.darkstar.wallora.data.FavoriteStore
 import com.darkstar.wallora.data.ImageCacheManager
@@ -65,7 +64,7 @@ fun WalloraApp(preferences: PreferencesStore) {
 
     CompositionLocalProvider(LocalImageCacheManager provides imageCache) {
         if (selectedWallpaper != null) {
-            WallpaperPreviewScreen(selectedWallpaper!!, favorites.contains(selectedWallpaper!!.id), preferences.wallpaperTarget, { selectedWallpaper = null }, { favorites.toggle(selectedWallpaper!!.id) })
+            WallpaperPreviewScreen(selectedWallpaper!!, favorites.contains(selectedWallpaper!!.id), { selectedWallpaper = null }, { favorites.toggle(selectedWallpaper!!.id) })
             return@CompositionLocalProvider
         }
         Scaffold(

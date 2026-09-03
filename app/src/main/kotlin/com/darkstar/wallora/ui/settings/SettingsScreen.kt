@@ -18,7 +18,6 @@ import androidx.compose.material.icons.outlined.Cached
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -45,7 +44,6 @@ import com.darkstar.wallora.data.ImageCacheManager
 import com.darkstar.wallora.data.PreferencesStore
 import com.darkstar.wallora.data.WallpaperRepository
 import com.darkstar.wallora.model.ThemeMode
-import com.darkstar.wallora.model.WallpaperTarget
 
 @Composable
 fun SettingsScreen(contentPadding: PaddingValues, preferences: PreferencesStore, imageCache: ImageCacheManager) {
@@ -60,7 +58,6 @@ fun SettingsScreen(contentPadding: PaddingValues, preferences: PreferencesStore,
     ) {
         item { SettingsHeader() }
         item { AppearanceSection(preferences) { dialog = SettingsDialog.THEME } }
-        item { WallpaperSection(preferences.wallpaperTarget) { dialog = SettingsDialog.WALLPAPER_TARGET } }
         item { CacheSection(cacheSize) { showClearCacheDialog = true } }
         item { AboutSection() }
         item { VersionSection() }
@@ -68,7 +65,6 @@ fun SettingsScreen(contentPadding: PaddingValues, preferences: PreferencesStore,
 
     when (dialog) {
         SettingsDialog.THEME -> ThemeDialog(preferences.themeMode, { preferences.updateThemeMode(it); dialog = null }, { dialog = null })
-        SettingsDialog.WALLPAPER_TARGET -> WallpaperTargetDialog(preferences.wallpaperTarget, { preferences.updateWallpaperTarget(it); dialog = null }, { dialog = null })
         null -> Unit
     }
 
@@ -83,7 +79,7 @@ fun SettingsScreen(contentPadding: PaddingValues, preferences: PreferencesStore,
     }
 }
 
-private enum class SettingsDialog { THEME, WALLPAPER_TARGET }
+private enum class SettingsDialog { THEME }
 
 @Composable
 private fun SettingsHeader() {
@@ -98,13 +94,6 @@ private fun AppearanceSection(preferences: PreferencesStore, onThemeClick: () ->
     SettingsSection(stringResource(R.string.appearance)) {
         SettingsPreference({ Icon(Icons.Outlined.DarkMode, null) }, stringResource(R.string.theme), preferences.themeLabel(), onThemeClick)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) SettingsSwitch({ Icon(Icons.Outlined.Palette, null) }, stringResource(R.string.dynamic_colors), stringResource(R.string.dynamic_colors_subtitle), preferences.dynamicColors, preferences::updateDynamicColors)
-    }
-}
-
-@Composable
-private fun WallpaperSection(target: WallpaperTarget, onTargetClick: () -> Unit) {
-    SettingsSection(stringResource(R.string.wallpaper)) {
-        SettingsPreference({ Icon(Icons.Outlined.Wallpaper, null) }, stringResource(R.string.apply_wallpaper), target.label(), onTargetClick)
     }
 }
 
@@ -168,12 +157,6 @@ private fun ThemeDialog(selected: ThemeMode, onSelected: (ThemeMode) -> Unit, on
 }
 
 @Composable
-private fun WallpaperTargetDialog(selected: WallpaperTarget, onSelected: (WallpaperTarget) -> Unit, onDismiss: () -> Unit) {
-    val options = WallpaperTarget.entries.map { it to it.label() }
-    SettingsSelectionDialog(stringResource(R.string.apply_wallpaper), options, selected, onSelected, onDismiss)
-}
-
-@Composable
 private fun <T> SettingsSelectionDialog(title: String, options: List<Pair<T, String>>, selected: T, onSelected: (T) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -204,11 +187,4 @@ private fun ThemeMode.label(): String = when (this) {
     ThemeMode.SYSTEM -> stringResource(R.string.system_default)
     ThemeMode.LIGHT -> stringResource(R.string.light)
     ThemeMode.DARK -> stringResource(R.string.dark)
-}
-
-@Composable
-private fun WallpaperTarget.label(): String = when (this) {
-    WallpaperTarget.HOME -> stringResource(R.string.home_screen)
-    WallpaperTarget.LOCK -> stringResource(R.string.lock_screen)
-    WallpaperTarget.BOTH -> stringResource(R.string.home_and_lock_screen)
 }
