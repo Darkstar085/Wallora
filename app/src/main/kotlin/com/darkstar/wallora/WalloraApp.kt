@@ -57,7 +57,7 @@ fun WalloraApp(preferences: PreferencesStore) {
 
     CompositionLocalProvider(LocalImageCacheManager provides imageCache) {
         if (selectedWallpaper != null) {
-            WallpaperPreviewScreen(selectedWallpaper!!, favorites.contains(selectedWallpaper!!.id), preferences, { selectedWallpaper = null }, { favorites.toggle(selectedWallpaper!!.id) })
+            WallpaperPreviewScreen(selectedWallpaper!!, favorites.contains(selectedWallpaper!!.id), preferences, repository, { selectedWallpaper = null }, { id -> favorites.toggle(id) })
             return@CompositionLocalProvider
         }
         Scaffold(bottomBar = {
