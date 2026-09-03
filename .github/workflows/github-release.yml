@@ -1,6 +1,11 @@
 name: Wallora Release
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "version.properties"
   workflow_dispatch:
 
 permissions:
@@ -37,12 +42,14 @@ jobs:
           printf '%s' "$WALLORA_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/wallora-release.jks"
 
       - name: Prepare release
+        id: prepare
         env:
           GITHUB_EVENT_BEFORE: ${{ github.event.before }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: python scripts/release.py --prepare
 
       - name: Build release APK
+        if: steps.prepare.outputs.release_needed == 'true'
         env:
           WALLORA_KEYSTORE_PATH: ${{ runner.temp }}/wallora-release.jks
           WALLORA_STORE_PASSWORD: ${{ secrets.WALLORA_STORE_PASSWORD }}
@@ -57,6 +64,7 @@ jobs:
           ./gradlew assembleRelease --stacktrace
 
       - name: Publish release
+        if: steps.prepare.outputs.release_needed == 'true'
         env:
           GITHUB_EVENT_BEFORE: ${{ github.event.before }}
           GITHUB_REPOSITORY: ${{ github.repository }}

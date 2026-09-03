@@ -7,28 +7,48 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+
 def run(*args, check=True, capture=True):
     return subprocess.run(args, cwd=ROOT, check=check, text=True, capture_output=capture)
 
+
+def set_output(name, value):
+    output = os.environ.get("GITHUB_OUTPUT")
+    if output:
+        with open(output, "a", encoding="utf-8") as file:
+            file.write(f"{name}={value}\n")
+
+
 def version():
-    text = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-    name = re.search(r'versionName\s*=\s*"([^"]+)"', text)
-    code = re.search(r'versionCode\s*=\s*(\d+)', text)
+    text = (ROOT / "version.properties").read_text(encoding="utf-8")
+    name = re.search(r"^versionName\s*=\s*(.+)$", text, re.M)
+    code = re.search(r"^versionCode\s*=\s*(\d+)$", text, re.M)
     if not name or not code:
         raise SystemExit("Could not determine app version.")
-    return name.group(1), int(code.group(1))
+    return name.group(1).strip(), int(code.group(1))
+
 
 def version_changed():
     before = os.environ.get("GITHUB_EVENT_BEFORE", "")
     if not before or set(before) == {"0"}:
         return True
-    diff = run("git", "diff", "--unified=0", before, "HEAD", "--", "app/build.gradle.kts").stdout
-    return bool(re.search(r"^[+-].*version(Name|Code)", diff, re.M))
+    try:
+        run("git", "cat-file", "-e", f"{before}^{{commit}}")
+        diff = run("git", "diff", "--unified=0", before, "HEAD", "--", "version.properties").stdout
+    except subprocess.CalledProcessError:
+        try:
+            diff = run("git", "diff", "--unified=0", "HEAD^", "HEAD", "--", "version.properties").stdout
+        except subprocess.CalledProcessError:
+            print(f"Could not compare {before} with HEAD; assuming a release is needed.")
+            return True
+    return bool(re.search(r"^[+-](versionName|versionCode)\\s*=", diff, re.M))
+
 
 def release_exists(tag):
     repo = os.environ.get("GITHUB_REPOSITORY", "")
     result = run("gh", "release", "view", tag, "--repo", repo, check=False)
     return result.returncode == 0
+
 
 def previous_release_tag(version_name):
     tags = [t for t in run("git", "tag", "--list", "v*", "--sort=-version:refname").stdout.splitlines() if t]
@@ -38,13 +58,15 @@ def previous_release_tag(version_name):
         return tags[index + 1] if index + 1 < len(tags) else None
     return tags[0] if tags else None
 
+
 def changelog_section(version_name):
     text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     pattern = rf"^## \[{re.escape(version_name)}\][^\n]*\n.*?(?=^## \[|\Z)"
     match = re.search(pattern, text, re.M | re.S)
     if not match:
-        raise SystemExit(f"No changelog entry found for v{version_name}.")
+        raise SystemExit(f"No changelog entry found for {version_name}.")
     return match.group(0).strip()
+
 
 def release_notes(version_name):
     section = changelog_section(version_name)
@@ -55,6 +77,7 @@ def release_notes(version_name):
     else:
         full = f"**Full Changelog:** [commits/{current}](https://github.com/{os.environ['GITHUB_REPOSITORY']}/commits/{current})"
     return section + "\n\n" + full + "\n"
+
 
 def amend_changelog():
     result = run("git", "status", "--short", "--", "CHANGELOG.md")
@@ -69,6 +92,7 @@ def amend_changelog():
     run("git", "push", "--force-with-lease", "origin", "HEAD:main")
     print("Amended the version commit with the generated CHANGELOG.md.")
 
+
 def main():
     p = argparse.ArgumentParser(description="Prepare and publish a Wallora release.")
     p.add_argument("--prepare", action="store_true")
@@ -76,14 +100,16 @@ def main():
     args = p.parse_args()
     name, _ = version()
     tag = f"v{name}"
-    if not version_changed():
+    changed = version_changed()
+    set_output("release_needed", "true" if changed else "false")
+    if not changed:
         print("Version metadata did not change; nothing to release.")
         return
     if args.prepare:
         changelog = ROOT / "CHANGELOG.md"
         marker = f"## [{name}]"
         if changelog.exists() and marker in changelog.read_text(encoding="utf-8"):
-            print(f"Changelog entry for v{name} already exists; keeping it.")
+            print(f"Changelog entry for {name} already exists; keeping it.")
         else:
             subprocess.run(["python", "scripts/generate_changelog.py", "--version", name], cwd=ROOT, check=True)
         amend_changelog()
@@ -104,6 +130,7 @@ def main():
         release_apk = ROOT / f"Wallora_v{name}.apk"
         release_apk.write_bytes(apk.read_bytes())
         subprocess.run(["gh", "release", "create", tag, str(release_apk), "--repo", repo, "--title", f"Wallora v{name}", "--notes-file", str(notes_file)], cwd=ROOT, check=True)
+
 
 if __name__ == "__main__":
     main()

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -7,12 +9,16 @@ android {
     namespace = "com.darkstar.wallora"
     compileSdk = 37
 
+    val versionProperties = Properties().apply {
+        load(rootProject.file("version.properties").inputStream())
+    }
+
     defaultConfig {
         applicationId = "com.darkstar.wallora"
         minSdk = 26
         targetSdk = 37
-        versionCode = 9
-        versionName = "1.5"
+        versionCode = versionProperties.getProperty("versionCode").toInt()
+        versionName = versionProperties.getProperty("versionName")
     }
 
     val keystorePath = System.getenv("WALLORA_KEYSTORE_PATH")

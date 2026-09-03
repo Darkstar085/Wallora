@@ -26,7 +26,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python scripts/telegram.py message --text "🤖 Wallora build started — ${GITHUB_SHA::8}"
+        run: python scripts/telegram.py message --text "🤖 Wallora build started - [${GITHUB_SHA::8}](${REPO_URL}/commit/${GITHUB_SHA})" --parse-mode Markdown
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
@@ -76,15 +76,11 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python scripts/telegram.py document \
-            --file "${{ steps.apk.outputs.path }}" \
-            --caption "📦 Wallora APK\nCommit: ${GITHUB_SHA::8}\n[View commit](${REPO_URL}/commit/${GITHUB_SHA})" \
-            --parse-mode Markdown
+        run: python scripts/telegram.py document --file "${{ steps.apk.outputs.path }}"
 
       - name: Notify Telegram build finished
         if: success()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python scripts/telegram.py message --text "✅ Wallora build finished — ${GITHUB_SHA::8}"
+        run: python scripts/telegram.py message --text "✅ Wallora build finished - [${GITHUB_SHA::8}](${REPO_URL}/commit/${GITHUB_SHA})" --parse-mode Markdown
