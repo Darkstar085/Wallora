@@ -23,13 +23,13 @@ class WallpaperRepository(
                 check(response.isSuccessful) { "Wallpaper service returned HTTP ${response.code}" }
                 val body = response.body?.string()?.takeIf { it.isNotBlank() }
                     ?: error("Wallpaper service returned an empty response")
-                val wallpapers = parse(body).shuffled()
+                val wallpapers = parse(body)
                 cacheFile.writeText(body)
                 cachedWallpapers = wallpapers
                 Result.success(wallpapers)
             }
         } catch (networkError: Exception) {
-            readCachedWallpapers()?.let { cachedWallpapers = it.shuffled(); Result.success(cachedWallpapers!!) }
+            readCachedWallpapers()?.let { cachedWallpapers = it; Result.success(it) }
                 ?: Result.failure(networkError)
         }
     }
@@ -55,8 +55,6 @@ class WallpaperRepository(
                         format = item.getString("format"),
                         path = item.getString("path"),
                         url = item.getString("url"),
-                        filename = item.optString("filename").ifBlank { item.getString("path").substringAfterLast('/') },
-                        fileSizeBytes = item.optLong("file_size_bytes", 0L),
                         addedAt = item.optString("added_at").takeIf { it.isNotBlank() },
                     ),
                 )

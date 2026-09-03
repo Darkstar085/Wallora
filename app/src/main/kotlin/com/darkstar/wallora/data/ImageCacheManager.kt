@@ -13,7 +13,7 @@ class ImageCacheManager(
 ) {
     private val diskCache: DiskCache by lazy {
         DiskCache.Builder()
-            .directory(context.filesDir.resolve(CACHE_DIRECTORY).absolutePath.toPath())
+            .directory(context.cacheDir.resolve(CACHE_DIRECTORY).absolutePath.toPath())
             .maxSizeBytes(MAX_CACHE_SIZE_BYTES)
             .build()
     }
@@ -24,24 +24,21 @@ class ImageCacheManager(
             .build()
     }
 
-    fun cacheSizeBytes(): Long = diskCache.size + metadataCacheSize()
+    fun cacheSizeBytes(): Long = diskCache.size
 
     fun clear() {
         imageLoader.memoryCache?.clear()
         diskCache.clear()
-        context.filesDir.resolve(METADATA_CACHE_FILE).delete()
     }
 
     fun imageRequest(url: String): ImageRequest = ImageRequest.Builder(context)
         .data(url)
-        .memoryCachePolicy(CachePolicy.ENABLED)
+        .memoryCachePolicy(CachePolicy.DISABLED)
         .diskCachePolicy(CachePolicy.ENABLED)
         .networkCachePolicy(CachePolicy.ENABLED)
         .build()
 
     fun formattedSize(): String = formatBytes(cacheSizeBytes())
-
-    private fun metadataCacheSize(): Long = context.filesDir.resolve(METADATA_CACHE_FILE).length()
 
     private fun formatBytes(bytes: Long): String {
         if (bytes < 1024) return "$bytes B"
@@ -57,7 +54,6 @@ class ImageCacheManager(
 
     companion object {
         private const val CACHE_DIRECTORY = "wallpaper_image_cache"
-        private const val METADATA_CACHE_FILE = "wallpapers.json"
-        private const val MAX_CACHE_SIZE_BYTES = 500L * 1024 * 1024
+        private const val MAX_CACHE_SIZE_BYTES = 100L * 1024 * 1024
     }
 }
