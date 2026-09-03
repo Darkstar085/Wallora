@@ -74,8 +74,11 @@ fun WallpaperPreviewScreen(wallpaper: Wallpaper, isFavorite: Boolean, preference
     var showInfoDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { repository.getWallpapers().onSuccess { if (it.isNotEmpty()) wallpapers = it } }
-    val initialIndex = wallpapers.indexOfFirst { it.id == wallpaper.id }.coerceAtLeast(0)
-    val pagerState = rememberPagerState(initialPage = initialIndex, pageCount = { wallpapers.size })
+    val pagerState = rememberPagerState(pageCount = { wallpapers.size })
+    LaunchedEffect(wallpapers) {
+        val target = wallpapers.indexOfFirst { it.id == wallpaper.id }.coerceAtLeast(0)
+        if (target != pagerState.currentPage) pagerState.scrollToPage(target)
+    }
     val currentWallpaper = wallpapers.getOrElse(pagerState.currentPage) { wallpaper }
 
     BackHandler { onBack() }
@@ -107,13 +110,10 @@ fun WallpaperPreviewScreen(wallpaper: Wallpaper, isFavorite: Boolean, preference
 
     Surface(Modifier.fillMaxSize(), color = colorResource(R.color.preview_background)) {
         Box(Modifier.fillMaxSize()) {
-            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
-                WallpaperImage(wallpapers[page], Modifier.fillMaxSize(), ContentScale.Crop)
-            }
+            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page -> WallpaperImage(wallpapers[page], Modifier.fillMaxSize(), ContentScale.Crop) }
             Box(Modifier.fillMaxWidth().align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(colorResource(R.color.transparent), colorResource(R.color.preview_overlay)))).padding(dimensionResource(R.dimen.preview_content_padding))) {
                 Column {
                     Text(currentWallpaper.title, color = colorResource(R.color.preview_text), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(stringResource(R.string.wallpaper_metadata, currentWallpaper.category, currentWallpaper.width, currentWallpaper.height), color = colorResource(R.color.preview_secondary_text))
                     Spacer(Modifier.size(dimensionResource(R.dimen.preview_content_spacing)))
                     Row(horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.preview_button_spacing)), verticalAlignment = Alignment.CenterVertically) {
                         Button(onClick = { showTargetDialog = true }, enabled = !applying && !downloading, modifier = Modifier.weight(1f)) { if (applying) CircularProgressIndicator(modifier = Modifier.size(dimensionResource(R.dimen.preview_button_icon_size)), strokeWidth = dimensionResource(R.dimen.progress_stroke_width)) else Text(stringResource(R.string.set_wallpaper)) }
