@@ -41,7 +41,7 @@ def version_changed():
         except subprocess.CalledProcessError:
             print(f"Could not compare {before} with HEAD; assuming a release is needed.")
             return True
-    return bool(re.search(r"^[+-](versionName|versionCode)\\s*=", diff, re.M))
+    return bool(re.search(r"^[+-](versionName|versionCode)\s*=", diff, re.M))
 
 
 def release_exists(tag):
