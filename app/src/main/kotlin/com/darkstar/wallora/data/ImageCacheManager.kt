@@ -15,7 +15,6 @@ class ImageCacheManager(
         DiskCache.Builder()
             .directory(context.cacheDir.resolve(CACHE_DIRECTORY).absolutePath.toPath())
             .maxSizeBytes(MAX_CACHE_SIZE_BYTES)
-            .memoryCacheMaxSizePercentWhileInBackground(0.25)
             .build()
     }
 

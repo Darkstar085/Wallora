@@ -50,15 +50,6 @@ def release_exists(tag):
     return result.returncode == 0
 
 
-def previous_release_tag(version_name):
-    tags = [t for t in run("git", "tag", "--list", "v*", "--sort=-version:refname").stdout.splitlines() if t]
-    current = f"v{version_name}"
-    if current in tags:
-        index = tags.index(current)
-        return tags[index + 1] if index + 1 < len(tags) else None
-    return tags[0] if tags else None
-
-
 def changelog_section(version_name):
     text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     pattern = rf"^## \[{re.escape(version_name)}\][^\n]*\n.*?(?=^## \[|\Z)"
@@ -70,13 +61,18 @@ def changelog_section(version_name):
 
 def release_notes(version_name):
     section = changelog_section(version_name)
-    previous = previous_release_tag(version_name)
-    current = f"v{version_name}"
-    if previous:
-        full = f"**Full Changelog:** [{previous}...{current}](https://github.com/{os.environ['GITHUB_REPOSITORY']}/compare/{previous}...{current})"
-    else:
-        full = f"**Full Changelog:** [commits/{current}](https://github.com/{os.environ['GITHUB_REPOSITORY']}/commits/{current})"
-    return section + "\n\n" + full + "\n"
+    points = []
+    for line in section.splitlines():
+        if not line.startswith("- "):
+            continue
+        point = line[2:].strip()
+        point = re.sub(r"\s+\(\[[0-9a-fA-F]{7}\]\([^)]*\)\)$", "", point)
+        point = re.sub(r"\s+\([0-9a-fA-F]{7}\)$", "", point)
+        if point and point not in points:
+            points.append(point)
+    if not points:
+        raise SystemExit(f"No release points found for {version_name}.")
+    return "\n".join(f"- {point}" for point in points) + "\n"
 
 
 def main():

@@ -35,7 +35,7 @@ jobs:
 
       - name: Decode release signing key
         env:
-          WALLORA_KEYSTORE_BASE64: ${{ secrets.WALLORA_KEYSTORE_BASE64 }}
+          WALLORA_KEYSTORE_BASE64: \${{ secrets.WALLORA_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
           [ -n "$WALLORA_KEYSTORE_BASE64" ] || { echo "Missing WALLORA_KEYSTORE_BASE64 secret"; exit 1; }
@@ -44,17 +44,17 @@ jobs:
       - name: Prepare release
         id: prepare
         env:
-          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_EVENT_BEFORE: \${{ github.event.before }}
+          GITHUB_REPOSITORY: \${{ github.repository }}
         run: python scripts/release.py --prepare
 
       - name: Build release APK
         if: steps.prepare.outputs.release_needed == 'true'
         env:
-          WALLORA_KEYSTORE_PATH: ${{ runner.temp }}/wallora-release.jks
-          WALLORA_STORE_PASSWORD: ${{ secrets.WALLORA_STORE_PASSWORD }}
-          WALLORA_KEY_ALIAS: ${{ secrets.WALLORA_KEY_ALIAS }}
-          WALLORA_KEY_PASSWORD: ${{ secrets.WALLORA_KEY_PASSWORD }}
+          WALLORA_KEYSTORE_PATH: \${{ runner.temp }}/wallora-release.jks
+          WALLORA_STORE_PASSWORD: \${{ secrets.WALLORA_STORE_PASSWORD }}
+          WALLORA_KEY_ALIAS: \${{ secrets.WALLORA_KEY_ALIAS }}
+          WALLORA_KEY_PASSWORD: \${{ secrets.WALLORA_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           [ -n "$WALLORA_STORE_PASSWORD" ] || { echo "Missing WALLORA_STORE_PASSWORD secret"; exit 1; }
@@ -66,7 +66,7 @@ jobs:
       - name: Publish release
         if: steps.prepare.outputs.release_needed == 'true'
         env:
-          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_EVENT_BEFORE: \${{ github.event.before }}
+          GITHUB_REPOSITORY: \${{ github.repository }}
+          GH_TOKEN: \${{ github.token }}
         run: python scripts/release.py --publish
