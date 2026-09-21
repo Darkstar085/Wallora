@@ -4,7 +4,6 @@ import android.app.WallpaperManager
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import com.darkstar.wallora.model.WallpaperTarget
@@ -19,10 +18,8 @@ class WallpaperApplier(private val context: Context) {
             connection.connect()
             try {
                 check(connection.responseCode in 200..299) { "Image download returned HTTP ${connection.responseCode}" }
-                val bytes = connection.inputStream.use { it.readBytes() }
-                check(bytes.isNotEmpty()) { "Downloaded image is empty" }
                 val manager = WallpaperManager.getInstance(context)
-                ByteArrayInputStream(bytes).use { stream ->
+                connection.inputStream.use { stream ->
                     val flags = when (target) {
                         WallpaperTarget.HOME -> WallpaperManager.FLAG_SYSTEM
                         WallpaperTarget.LOCK -> WallpaperManager.FLAG_LOCK

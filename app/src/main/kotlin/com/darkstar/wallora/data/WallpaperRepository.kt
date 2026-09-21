@@ -4,6 +4,8 @@ import android.content.Context
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -11,13 +13,15 @@ import com.darkstar.wallora.model.Wallpaper
 
 class WallpaperRepository(
     private val context: Context,
-    private val client: OkHttpClient = OkHttpClient(),
+    private val client: OkHttpClient = NetworkClient.client,
 ) {
     private var cachedWallpapers: List<Wallpaper>? = null
 
     suspend fun getWallpapers(): Result<List<Wallpaper>> = withContext(Dispatchers.IO) {
         cachedWallpapers?.let { return@withContext Result.success(it) }
-        try {
+        loadMutex.withLock {
+            cachedWallpapers?.let { return@withLock Result.success(it) }
+            try {
             val request = Request.Builder().url(API_URL).build()
             client.newCall(request).execute().use { response ->
                 check(response.isSuccessful) { "Wallpaper service returned HTTP ${response.code}" }
@@ -28,9 +32,10 @@ class WallpaperRepository(
                 cachedWallpapers = wallpapers
                 Result.success(wallpapers)
             }
-        } catch (networkError: Exception) {
-            readCachedWallpapers()?.let { cachedWallpapers = it; Result.success(it) }
-                ?: Result.failure(networkError)
+            } catch (networkError: Exception) {
+                readCachedWallpapers()?.let { cachedWallpapers = it; Result.success(it) }
+                    ?: Result.failure(networkError)
+            }
         }
     }
 
@@ -70,5 +75,6 @@ class WallpaperRepository(
     companion object {
         const val API_URL = "https://raw.githubusercontent.com/Darkstar085/Wallpapers/main/api/wallpapers.json"
         private const val CACHE_FILE_NAME = "wallpapers.json"
+        private val loadMutex = Mutex()
     }
 }

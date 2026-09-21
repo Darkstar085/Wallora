@@ -56,8 +56,13 @@ fun SettingsScreen(contentPadding: PaddingValues, preferences: PreferencesStore,
     var showClearCacheDialog by remember { mutableStateOf(false) }
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         uri ?: return@rememberLauncherForActivityResult
-        runCatching { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
-        preferences.updateDownloadLocationUri(uri.toString())
+        val persisted = runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+            )
+        }.isSuccess
+        if (persisted) preferences.updateDownloadLocationUri(uri.toString())
     }
 
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(top = contentPadding.calculateTopPadding() + dimensionResource(R.dimen.settings_header_vertical_padding), bottom = contentPadding.calculateBottomPadding() + dimensionResource(R.dimen.screen_vertical_padding)), verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.settings_list_spacing))) {

@@ -18,7 +18,7 @@ object NotificationHelper {
     private const val CHANNEL_ID = "wallora_downloads"
     private const val CHANNEL_NAME = "Downloads"
 
-    fun showDownloadComplete(context: Context, filename: String) {
+    fun showDownloadComplete(context: Context, uri: Uri, filename: String) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             manager.createNotificationChannel(
@@ -26,10 +26,9 @@ object NotificationHelper {
             )
         }
 
-        val fileUri = findDownloadedFile(context, filename)
-        val galleryPendingIntent = fileUri?.let { createViewPendingIntent(context, it, filename) }
-        val sharePendingIntent = fileUri?.let { createSharePendingIntent(context, it, filename) }
-        val bitmap = fileUri?.let { uri -> runCatching { context.contentResolver.openInputStream(uri)?.use(BitmapFactory::decodeStream) }.getOrNull() }
+        val galleryPendingIntent = createViewPendingIntent(context, uri, filename)
+        val sharePendingIntent = createSharePendingIntent(context, uri, filename)
+        val bitmap = runCatching { context.contentResolver.openInputStream(uri)?.use(BitmapFactory::decodeStream) }.getOrNull()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
@@ -38,13 +37,9 @@ object NotificationHelper {
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
-        galleryPendingIntent?.let { builder.setContentIntent(it) }
-        sharePendingIntent?.let {
-            builder.addAction(android.R.drawable.ic_menu_share, "Share", it)
-        }
-        galleryPendingIntent?.let {
-            builder.addAction(android.R.drawable.ic_menu_view, "Open in Gallery", it)
-        }
+        builder.setContentIntent(galleryPendingIntent)
+        builder.addAction(android.R.drawable.ic_menu_share, "Share", sharePendingIntent)
+        builder.addAction(android.R.drawable.ic_menu_view, "Open in Gallery", galleryPendingIntent)
         bitmap?.let {
             builder.setLargeIcon(it)
             builder.setStyle(
@@ -55,7 +50,7 @@ object NotificationHelper {
             )
         }
 
-        manager.notify(filename.hashCode(), builder.build())
+        manager.notify(filename.hashCode() * 31 + uri.hashCode(), builder.build())
     }
 
     private fun createViewPendingIntent(context: Context, uri: Uri, filename: String): PendingIntent {
@@ -86,46 +81,4 @@ object NotificationHelper {
         )
     }
 
-    private fun findDownloadedFile(context: Context, filename: String): Uri? {
-        val customTreeUri = PreferencesStore(context).downloadLocationUri
-        return customTreeUri?.let { findInTree(context, Uri.parse(it), filename) }
-            ?: findInMediaStore(context, filename)
-    }
-
-    private fun findInMediaStore(context: Context, filename: String): Uri? {
-        val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME)
-        context.contentResolver.query(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            projection,
-            "${MediaStore.Images.Media.DISPLAY_NAME} = ? AND ${MediaStore.Images.Media.RELATIVE_PATH} = ?",
-            arrayOf(filename, Environment.DIRECTORY_PICTURES + "/Wallora/"),
-            "${MediaStore.Images.Media.DATE_ADDED} DESC"
-        )?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                return MediaStore.Images.Media.EXTERNAL_CONTENT_URI.buildUpon()
-                    .appendPath(cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)).toString())
-                    .build()
-            }
-        }
-        return null
-    }
-
-    private fun findInTree(context: Context, treeUri: Uri, filename: String): Uri? {
-        val documentId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull() ?: return null
-        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, documentId)
-        val projection = arrayOf(
-            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-            DocumentsContract.Document.COLUMN_DISPLAY_NAME
-        )
-        context.contentResolver.query(childrenUri, projection, null, null, null)?.use { cursor ->
-            val nameColumn = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
-            val idColumn = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
-            while (cursor.moveToNext()) {
-                if (nameColumn >= 0 && idColumn >= 0 && cursor.getString(nameColumn) == filename) {
-                    return DocumentsContract.buildDocumentUriUsingTree(treeUri, cursor.getString(idColumn))
-                }
-            }
-        }
-        return null
-    }
 }

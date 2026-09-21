@@ -13,7 +13,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-class WallpaperDownloader(private val context: Context, private val client: OkHttpClient = OkHttpClient()) {
+class WallpaperDownloader(private val context: Context, private val client: OkHttpClient = NetworkClient.client) {
     suspend fun download(wallpaper: Wallpaper, customTreeUri: String?): Result<Uri> = withContext(Dispatchers.IO) {
         runCatching {
             val resolver = context.contentResolver

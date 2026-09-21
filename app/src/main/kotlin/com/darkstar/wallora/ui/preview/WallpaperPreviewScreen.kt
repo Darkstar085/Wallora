@@ -94,9 +94,9 @@ fun WallpaperPreviewScreen(wallpaper: Wallpaper, isFavorite: Boolean, preference
         resultMessage = null
         scope.launch {
             WallpaperDownloader(context).download(currentWallpaper, preferences.downloadLocationUri)
-                .onSuccess {
+                .onSuccess { uri ->
                     resultMessage = "Saved ${currentWallpaper.filename}"
-                    NotificationHelper.showDownloadComplete(context, currentWallpaper.filename)
+                    NotificationHelper.showDownloadComplete(context, uri, currentWallpaper.filename)
                 }
                 .onFailure { resultMessage = it.message ?: "Couldn't download wallpaper" }
             downloading = false

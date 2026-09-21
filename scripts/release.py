@@ -79,20 +79,6 @@ def release_notes(version_name):
     return section + "\n\n" + full + "\n"
 
 
-def amend_changelog():
-    result = run("git", "status", "--short", "--", "CHANGELOG.md")
-    if not result.stdout.strip():
-        print("Changelog is already committed; no amend needed.")
-        return
-    run("git", "add", "CHANGELOG.md")
-    run(
-        "git", "-c", "user.name=github-actions[bot]", "-c", "user.email=41898282+github-actions[bot]@users.noreply.github.com",
-        "commit", "--amend", "--no-edit",
-    )
-    run("git", "push", "--force-with-lease", "origin", "HEAD:main")
-    print("Amended the version commit with the generated CHANGELOG.md.")
-
-
 def main():
     p = argparse.ArgumentParser(description="Prepare and publish a Wallora release.")
     p.add_argument("--prepare", action="store_true")
@@ -112,7 +98,6 @@ def main():
             print(f"Changelog entry for {name} already exists; keeping it.")
         else:
             subprocess.run(["python", "scripts/generate_changelog.py", "--version", name], cwd=ROOT, check=True)
-        amend_changelog()
     if args.publish:
         if not (ROOT / "CHANGELOG.md").exists():
             raise SystemExit("CHANGELOG.md is missing. Run scripts/generate_changelog.py first.")
