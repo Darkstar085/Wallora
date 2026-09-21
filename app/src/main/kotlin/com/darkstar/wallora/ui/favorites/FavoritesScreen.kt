@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,7 +47,8 @@ fun FavoritesScreen(
         repository.getWallpapers().onSuccess { wallpapers = it; loading = false }.onFailure { loading = false }
     }
 
-    val favorites = wallpapers.filter { it.id in favoriteStore.ids() }
+    val favoriteIds by favoriteStore.favoriteIds.collectAsState()
+    val favorites = wallpapers.filter { it.id in favoriteIds }
 
     if (loading) {
         Box(Modifier.fillMaxSize().padding(contentPadding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }

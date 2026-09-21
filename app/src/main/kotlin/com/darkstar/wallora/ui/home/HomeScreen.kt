@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -116,6 +117,7 @@ fun HomeScreen(repository: WallpaperRepository, favoriteStore: FavoriteStore, co
 
 @Composable
 private fun FeaturedCarousel(wallpapers: List<Wallpaper>, favoriteStore: FavoriteStore, onWallpaperClick: (Wallpaper) -> Unit) {
+    val favoriteIds by favoriteStore.favoriteIds.collectAsState()
     val pagerState = rememberPagerState(pageCount = { wallpapers.size })
     val autoScrollDelay = integerResource(R.integer.featured_auto_scroll_delay_ms).toLong()
     LaunchedEffect(pagerState, wallpapers.size, autoScrollDelay) {
@@ -126,12 +128,11 @@ private fun FeaturedCarousel(wallpapers: List<Wallpaper>, favoriteStore: Favorit
     }
     HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth().height(dimensionResource(R.dimen.featured_height)), pageSpacing = dimensionResource(R.dimen.pager_page_spacing)) { page ->
         val wallpaper = wallpapers[page]
-        var favorite by remember(wallpaper.id) { mutableStateOf(favoriteStore.contains(wallpaper.id)) }
         Surface(onClick = { onWallpaperClick(wallpaper) }, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(dimensionResource(R.dimen.featured_corner_radius)), color = MaterialTheme.colorScheme.surfaceVariant) {
             Box {
                 WallpaperImage(wallpaper, Modifier.fillMaxSize(), ContentScale.Crop)
-                IconButton(onClick = { favorite = !favorite; favoriteStore.toggle(wallpaper.id) }, modifier = Modifier.align(Alignment.TopEnd).padding(dimensionResource(R.dimen.favorite_button_padding)).background(colorResource(R.color.favorite_scrim), CircleShape)) {
-                    Icon(if (favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, contentDescription = stringResource(if (favorite) R.string.remove_from_favorites else R.string.add_to_favorites), tint = colorResource(R.color.preview_text))
+                IconButton(onClick = { favoriteStore.toggle(wallpaper.id) }, modifier = Modifier.align(Alignment.TopEnd).padding(dimensionResource(R.dimen.favorite_button_padding)).background(colorResource(R.color.favorite_scrim), CircleShape)) {
+                    Icon(if (wallpaper.id in favoriteIds) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, contentDescription = stringResource(if (wallpaper.id in favoriteIds) R.string.remove_from_favorites else R.string.add_to_favorites), tint = colorResource(R.color.preview_text))
                 }
             }
         }

@@ -73,7 +73,7 @@ fun WallpaperPreviewScreen(wallpaper: Wallpaper, isFavorite: Boolean, preference
     val context = LocalContext.current.applicationContext
     val scope = rememberCoroutineScope()
     var wallpapers by remember { mutableStateOf(listOf(wallpaper)) }
-    var favorite by remember(wallpaper.id) { mutableStateOf(isFavorite) }
+    var favorite by remember(wallpaper.id, isFavorite) { mutableStateOf(isFavorite) }
     var applying by remember { mutableStateOf(false) }
     var downloading by remember { mutableStateOf(false) }
     var resultMessage by remember { mutableStateOf<String?>(null) }

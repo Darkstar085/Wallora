@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.zIndex
 import com.darkstar.wallora.R
 import com.darkstar.wallora.data.FavoriteStore
 import com.darkstar.wallora.data.ImageCacheManager
@@ -54,18 +56,21 @@ fun WalloraApp(preferences: PreferencesStore) {
     val imageCache = remember { ImageCacheManager(context) }
     var selectedTab by remember { mutableStateOf(AppTab.HOME) }
     var selectedWallpaper by remember { mutableStateOf<Wallpaper?>(null) }
+    val favoriteIds by favorites.favoriteIds.collectAsState()
 
     CompositionLocalProvider(LocalImageCacheManager provides imageCache) {
         Scaffold(bottomBar = {
-            Surface(Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.bottom_bar_horizontal_padding), vertical = dimensionResource(R.dimen.bottom_bar_vertical_padding)), shape = RoundedCornerShape(dimensionResource(R.dimen.bottom_bar_corner_radius)), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.96f), tonalElevation = dimensionResource(R.dimen.bottom_bar_elevation)) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.bottom_bar_content_horizontal_padding), vertical = dimensionResource(R.dimen.bottom_bar_content_vertical_padding)), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                    AppTab.entries.forEach { tab ->
-                        val selected = selectedTab == tab
-                        Surface(onClick = { selectedTab = tab }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(dimensionResource(R.dimen.bottom_bar_item_corner_radius)), color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent) {
-                            Column(Modifier.padding(vertical = dimensionResource(R.dimen.bottom_bar_item_vertical_padding)), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.bottom_bar_item_spacing))) {
-                                val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                Icon(when (tab) { AppTab.HOME -> Icons.Outlined.Home; AppTab.FAVORITES -> Icons.Outlined.FavoriteBorder; AppTab.SETTINGS -> Icons.Outlined.Settings }, contentDescription = tab.label(), tint = tint, modifier = Modifier.size(dimensionResource(R.dimen.bottom_bar_icon_size)))
-                                Text(tab.label(), color = tint, style = MaterialTheme.typography.labelSmall)
+            if (selectedWallpaper == null) {
+                Surface(Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.bottom_bar_horizontal_padding), vertical = dimensionResource(R.dimen.bottom_bar_vertical_padding)), shape = RoundedCornerShape(dimensionResource(R.dimen.bottom_bar_corner_radius)), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.96f), tonalElevation = dimensionResource(R.dimen.bottom_bar_elevation)) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.bottom_bar_content_horizontal_padding), vertical = dimensionResource(R.dimen.bottom_bar_content_vertical_padding)), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                        AppTab.entries.forEach { tab ->
+                            val selected = selectedTab == tab
+                            Surface(onClick = { selectedTab = tab }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(dimensionResource(R.dimen.bottom_bar_item_corner_radius)), color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent) {
+                                Column(Modifier.padding(vertical = dimensionResource(R.dimen.bottom_bar_item_vertical_padding)), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.bottom_bar_item_spacing))) {
+                                    val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    Icon(when (tab) { AppTab.HOME -> Icons.Outlined.Home; AppTab.FAVORITES -> Icons.Outlined.FavoriteBorder; AppTab.SETTINGS -> Icons.Outlined.Settings }, contentDescription = tab.label(), tint = tint, modifier = Modifier.size(dimensionResource(R.dimen.bottom_bar_icon_size)))
+                                    Text(tab.label(), color = tint, style = MaterialTheme.typography.labelSmall)
+                                }
                             }
                         }
                     }
@@ -83,7 +88,7 @@ fun WalloraApp(preferences: PreferencesStore) {
                     Box(Modifier.fillMaxSize().zIndex(2f)) {
                         WallpaperPreviewScreen(
                             wallpaper,
-                            favorites.contains(wallpaper.id),
+                            wallpaper.id in favoriteIds,
                             preferences,
                             repository,
                             { selectedWallpaper = null },

@@ -15,6 +15,7 @@ class ImageCacheManager(
         DiskCache.Builder()
             .directory(context.cacheDir.resolve(CACHE_DIRECTORY).absolutePath.toPath())
             .maxSizeBytes(MAX_CACHE_SIZE_BYTES)
+            .memoryCacheMaxSizePercentWhileInBackground(0.25)
             .build()
     }
 
@@ -33,7 +34,6 @@ class ImageCacheManager(
 
     fun imageRequest(url: String): ImageRequest = ImageRequest.Builder(context)
         .data(url)
-        .memoryCachePolicy(CachePolicy.DISABLED)
         .diskCachePolicy(CachePolicy.ENABLED)
         .networkCachePolicy(CachePolicy.ENABLED)
         .build()

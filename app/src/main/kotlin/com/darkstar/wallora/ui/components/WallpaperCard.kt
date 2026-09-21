@@ -20,6 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -40,11 +41,12 @@ val LocalImageCacheManager = staticCompositionLocalOf<ImageCacheManager> { error
 
 @Composable
 fun WallpaperCard(wallpaper: Wallpaper, favoriteStore: FavoriteStore, onClick: () -> Unit) {
-    var favorite by remember(wallpaper.id) { mutableStateOf(favoriteStore.contains(wallpaper.id)) }
+    val favoriteIds by favoriteStore.favoriteIds.collectAsState()
+    val favorite = wallpaper.id in favoriteIds
     Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().height(dimensionResource(R.dimen.card_height)), shape = RoundedCornerShape(dimensionResource(R.dimen.card_corner_radius)), color = MaterialTheme.colorScheme.surfaceVariant) {
         Box {
             WallpaperImage(wallpaper, Modifier.fillMaxSize(), ContentScale.Crop)
-            IconButton(onClick = { favorite = !favorite; favoriteStore.toggle(wallpaper.id) }, modifier = Modifier.align(Alignment.TopEnd).padding(dimensionResource(R.dimen.favorite_button_padding)).background(colorResource(R.color.favorite_scrim), CircleShape)) {
+            IconButton(onClick = { favoriteStore.toggle(wallpaper.id) }, modifier = Modifier.align(Alignment.TopEnd).padding(dimensionResource(R.dimen.favorite_button_padding)).background(colorResource(R.color.favorite_scrim), CircleShape)) {
                 Icon(if (favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, contentDescription = stringResource(if (favorite) R.string.remove_from_favorites else R.string.add_to_favorites), tint = colorResource(R.color.preview_text))
             }
         }

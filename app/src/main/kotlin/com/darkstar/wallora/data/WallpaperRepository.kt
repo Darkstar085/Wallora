@@ -47,10 +47,10 @@ class WallpaperRepository(
 
     private fun parse(body: String): List<Wallpaper> {
         val items = JSONObject(body).getJSONArray("wallpapers")
-        return buildList(items.length()) {
+        val parsed = buildList(items.length()) {
             for (index in 0 until items.length()) {
-                val item = items.getJSONObject(index)
-                add(
+                runCatching {
+                    val item = items.getJSONObject(index)
                     Wallpaper(
                         id = item.getString("id"),
                         title = item.getString("title"),
@@ -63,10 +63,12 @@ class WallpaperRepository(
                         filename = item.optString("filename").ifBlank { item.getString("path").substringAfterLast('/') },
                         fileSizeBytes = item.optLong("file_size_bytes", 0L),
                         addedAt = item.optString("added_at").takeIf { it.isNotBlank() },
-                    ),
-                )
+                    )
+                }.onSuccess(::add)
             }
         }
+        check(items.length() == 0 || parsed.isNotEmpty()) { "Wallpaper catalogue contains no valid entries" }
+        return parsed
     }
 
     private val cacheFile: File
