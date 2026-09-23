@@ -41,6 +41,12 @@
     <string name="download">Download</string>
     <string name="info">Info</string>
     <string name="close">Close</string>
+    <string name="system">System</string>
+    <string name="system_subtitle">Permissions and system settings.</string>
+    <string name="notifications">Notifications</string>
+    <string name="notifications_subtitle">Manage Wallora notifications.</string>
+    <string name="install_unknown_apps">Install unknown apps</string>
+    <string name="install_unknown_apps_subtitle">Allow installation of updates.</string>
     <string name="about">About</string>
     <string name="about_section_subtitle">App information and support.</string>
     <string name="about_description">A simple open-source wallpaper app built with Kotlin and Jetpack Compose.</string>\n    <string name="storage">Storage</string>

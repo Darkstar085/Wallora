@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -29,6 +30,8 @@ import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -160,6 +163,27 @@ fun SettingsScreen(
                 cacheSize = cacheSize,
                 onDownloadLocationClick = { folderPicker.launch(null) },
                 onClearCacheClick = { showClearCacheDialog = true },
+            )
+        }
+        item {
+            SystemSection(
+                onNotificationsClick = {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        },
+                    )
+                },
+                onUnknownAppsClick = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startActivity(
+                            Intent(
+                                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                Uri.parse("package:${context.packageName}"),
+                            ),
+                        )
+                    }
+                },
             )
         }
         item {
@@ -355,6 +379,31 @@ private fun StorageSection(
             subtitle = cacheSize,
             actionLabel = stringResource(R.string.clear),
             onAction = onClearCacheClick,
+        )
+    }
+}
+
+@Composable
+private fun SystemSection(
+    onNotificationsClick: () -> Unit,
+    onUnknownAppsClick: () -> Unit,
+) {
+    SettingsSection(
+        title = stringResource(R.string.system),
+        subtitle = stringResource(R.string.system_subtitle),
+    ) {
+        SettingsPreference(
+            icon = { Icon(Icons.Outlined.Notifications, contentDescription = null) },
+            title = stringResource(R.string.notifications),
+            subtitle = stringResource(R.string.notifications_subtitle),
+            onClick = onNotificationsClick,
+        )
+
+        SettingsPreference(
+            icon = { Icon(Icons.Outlined.Security, contentDescription = null) },
+            title = stringResource(R.string.install_unknown_apps),
+            subtitle = stringResource(R.string.install_unknown_apps_subtitle),
+            onClick = onUnknownAppsClick,
         )
     }
 }
