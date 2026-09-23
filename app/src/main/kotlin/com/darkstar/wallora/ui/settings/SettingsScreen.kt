@@ -594,7 +594,7 @@ private fun SettingsSection(
                 )
             }
             content()
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(8.dp))
         }
     }
 }
