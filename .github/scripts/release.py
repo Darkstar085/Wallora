@@ -5,11 +5,17 @@ import re
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def run(*args, check=True, capture=True):
-    return subprocess.run(args, cwd=ROOT, check=check, text=True, capture_output=capture)
+    return subprocess.run(
+        args,
+        cwd=ROOT,
+        check=check,
+        text=True,
+        capture_output=capture,
+    )
 
 
 def set_output(name, value):
@@ -93,7 +99,7 @@ def main():
         if changelog.exists() and marker in changelog.read_text(encoding="utf-8"):
             print(f"Changelog entry for {name} already exists; keeping it.")
         else:
-            subprocess.run(["python", ".github/generate_changelog.py", "--version", name], cwd=ROOT, check=True)
+            subprocess.run(["python", ".github/scripts/generate_changelog.py", "--version", name], cwd=ROOT, check=True)
     if args.publish:
         if not (ROOT / "CHANGELOG.md").exists():
             raise SystemExit("CHANGELOG.md is missing. Run .github/generate_changelog.py first.")

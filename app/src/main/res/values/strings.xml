@@ -49,8 +49,16 @@
     <string name="install_unknown_apps_subtitle">Allow installation of updates.</string>
     <string name="about">About</string>
     <string name="about_section_subtitle">App information and support.</string>
-    <string name="about_description">A simple open-source wallpaper app built with Kotlin and Jetpack Compose.</string>\n    <string name="storage">Storage</string>
-    <string name="storage_subtitle">Downloads and saved data.</string>\n    <string name="about_item">About</string>\n    <string name="about_item_subtitle">Learn about Wallora and its updates.</string>\n    <string name="open_source">Open source</string>\n    <string name="open_source_subtitle">View the source code on GitHub.</string>\n    <string name="about_dialog_description">Beautiful wallpapers, simple controls, and a clean experience.</string>\n    <string name="made_with">Made with ❤️ by Sipun</string>\n    <string name="update_section_title">Updates</string>
+    <string name="about_description">A simple open-source wallpaper app built with Kotlin and Jetpack Compose.</string>
+    <string name="storage">Storage</string>
+    <string name="storage_subtitle">Downloads and saved data.</string>
+    <string name="about_item">About</string>
+    <string name="about_item_subtitle">Learn about Wallora and its updates.</string>
+    <string name="open_source">Open source</string>
+    <string name="open_source_subtitle">View the source code on GitHub.</string>
+    <string name="about_dialog_description">Beautiful wallpapers, simple controls, and a clean experience.</string>
+    <string name="made_with">Made with ❤️ by Sipun</string>
+    <string name="update_section_title">Updates</string>
     <string name="wallpaper_catalog">Wallpaper catalog</string>
     <string name="wallpaper_catalog_value">Darkstar085/Wallpapers</string>
     <string name="version">Version</string>
@@ -84,7 +92,6 @@
     <string name="update_download_failed">Could not download the update.</string>
     <string name="update_no_notes">No release notes were provided.</string>
     <string name="update">Update</string>
-    <string name="preference_arrow">›</string>
     <string name="settings_subtitle">Make Wallora yours.</string>
     <string name="system_default">System default</string>
     <string name="light">Light</string>

@@ -21,10 +21,10 @@ android {
         versionName = versionProperties.getProperty("versionName")
     }
 
-    val keystorePath = System.getenv("WALLORA_KEYSTORE_PATH")
-    val storePassword = System.getenv("WALLORA_STORE_PASSWORD")
-    val keyAlias = System.getenv("WALLORA_KEY_ALIAS")
-    val keyPassword = System.getenv("WALLORA_KEY_PASSWORD")
+    val keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+    val storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    val keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+    val keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
 
     signingConfigs {
         create("wallora") {
