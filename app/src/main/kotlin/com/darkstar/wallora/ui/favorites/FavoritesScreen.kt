@@ -12,13 +12,15 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,16 +44,51 @@ fun FavoritesScreen(
 ) {
     var wallpapers by remember { mutableStateOf<List<Wallpaper>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    var loadError by remember { mutableStateOf(false) }
+    var retryKey by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(Unit) {
-        repository.getWallpapers().onSuccess { wallpapers = it; loading = false }.onFailure { loading = false }
+    LaunchedEffect(retryKey) {
+        loading = true
+        loadError = false
+        repository.getWallpapers()
+            .onSuccess {
+                wallpapers = it
+                loading = false
+            }
+            .onFailure {
+                loading = false
+                loadError = true
+            }
     }
 
     val favoriteIds by favoriteStore.favoriteIds.collectAsState()
     val favorites = wallpapers.filter { it.id in favoriteIds }
 
     if (loading) {
-        Box(Modifier.fillMaxSize().padding(contentPadding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        Box(Modifier.fillMaxSize().padding(contentPadding), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (loadError) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(contentPadding),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    stringResource(R.string.couldnt_load_wallpapers),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(dimensionResource(R.dimen.tiny_spacing)))
+                Button(onClick = { retryKey++ }) {
+                    Text(stringResource(R.string.retry))
+                }
+            }
+        }
         return
     }
 

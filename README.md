@@ -2,16 +2,16 @@
 
 A focused Android wallpaper app built with Kotlin and Jetpack Compose.
 
-Wallora keeps the experience simple: discover curated wallpapers, search by title, filter by collection, save favorites, preview a wallpaper, and set it on the device.
+Wallora keeps the experience simple: discover curated wallpapers, filter by collection, save favorites, preview a wallpaper, and set it on the device.
 
 ## Stack
 
 - Kotlin
 - Jetpack Compose + Material 3
 - Coil 3 for image loading
-- OkHttp for the wallpaper catalog
+- OkHttp for the wallpaper catalog and image delivery
 - SharedPreferences for lightweight favorites
-- GitHub Actions for debug APK builds
+- GitHub Actions for debug APK builds and releases
 
 ## Wallpaper catalog
 
@@ -23,23 +23,24 @@ Image URLs are generated against the `main` branch so catalog metadata and commi
 
 ## Screens
 
-- Home — featured wallpaper, collections, latest wallpapers
-- Explore — search and category filtering
+- Home — featured wallpaper, collections, and latest wallpapers
 - Favorites — saved wallpapers
-- Preview — full wallpaper view and set-wallpaper action
+- Preview — full wallpaper view, download, and set-wallpaper actions
 - Settings — source and app information
 
 ## Build
 
-Open the project in Android Studio with JDK 17 and an Android SDK that supports API 36.
+Open the project in Android Studio with JDK 17 and an Android SDK that supports API 37.
 
 Or run:
 
 ```bash
-gradle assembleDebug
+./gradlew assembleDebug
 ```
 
-The GitHub Actions workflow also builds `assembleDebug` on every push to `main` and uploads the APK as an artifact.
+The GitHub Actions debug workflow is manually triggered and sends the built APK to Telegram only. It does not upload a workflow artifact or send separate build notifications.
+
+Release builds are triggered when `version.properties` changes on `main`. The existing release signing configuration is preserved, and release notes are generated from the matching `CHANGELOG.md` version section.
 
 ## License
 
