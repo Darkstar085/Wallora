@@ -38,7 +38,7 @@ jobs:
         run: |
           set -euo pipefail
           [ -n "$ANDROID_KEYSTORE_BASE64" ] || { echo "Missing ANDROID_KEYSTORE_BASE64 secret"; exit 1; }
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/wallora-release.jks"
+          printf "%s" "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/wallora-release.jks"
 
       - if: steps.validate.outputs.release == 'true'
         name: Build signed APK
@@ -61,6 +61,7 @@ jobs:
 
       - if: steps.validate.outputs.release == 'true'
         name: Prepare release APK
+        id: prepare
         run: python .github/scripts/release.py prepare
 
       - if: steps.validate.outputs.release == 'true'
@@ -75,4 +76,4 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           RELEASE_CHAT_ID: ${{ secrets.RELEASE_CHAT_ID }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: python .github/scripts/telegram.py "Wallora_v$(grep '^versionName=' version.properties | cut -d= -f2).apk" release
+        run: python .github/scripts/telegram.py "${{ steps.prepare.outputs.apk }}" release
