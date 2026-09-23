@@ -1,0 +1,68 @@
+name: Wallora Debug
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: wallora-debug
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Restore debug key
+        id: debug-key
+        uses: actions/cache@v6
+        with:
+          path: ~/.android/debug.keystore
+          key: wallora-debug-keystore-ubuntu
+
+      - name: Generate debug key
+        if: steps.debug-key.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.android
+          keytool -genkeypair -v \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Build debug APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      - name: Verify and rename APK
+        id: apk
+        run: |
+          set -euo pipefail
+          apk="$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          [ -n "$apk" ] && [ -s "$apk" ] || { echo "No debug APK was produced."; exit 1; }
+          name="wallora_${GITHUB_SHA::8}.apk"
+          cp "$apk" "$name"
+          sha256sum "$name"
+          echo "path=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Send APK to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python .github/scripts/telegram.py "${{ steps.apk.outputs.path }}"
