@@ -86,6 +86,12 @@
     <string name="no_update_available_message">You\'re already running the latest version, %1$s.</string>
     <string name="ok">OK</string>
     <string name="update_subtitle">Get the latest Wallora release.</string>
+    <string name="update_version_description">A new version of Wallora is available. You can download and install it now.</string>
+    <string name="your_version">Your version</string>
+    <string name="latest_version">Latest version</string>
+    <string name="update_preserved_message">Your settings, favorites, and downloaded wallpapers will be preserved.</string>
+    <string name="not_now">Not now</string>
+    <string name="download_now">Download now</string>
     <string name="tap_version_to_check">Tap the version above to check for updates.</string>
     <string name="up_to_date">You are up to date.</string>
     <string name="update_check_failed">Could not check for updates.</string>

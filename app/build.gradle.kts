@@ -21,31 +21,40 @@ android {
         versionName = versionProperties.getProperty("versionName")
     }
 
-    val keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
-    val storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    val keystoreFile = System.getenv("ANDROID_KEYSTORE_FILE")
+    val keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
     val keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-    val keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
 
     signingConfigs {
-        create("wallora") {
-            if (!keystorePath.isNullOrBlank() && !storePassword.isNullOrBlank() && !keyAlias.isNullOrBlank() && !keyPassword.isNullOrBlank()) {
-                storeFile = file(keystorePath)
-                this.storePassword = storePassword
+        create("release") {
+            if (!keystoreFile.isNullOrBlank()) {
+                storeFile = file(keystoreFile)
+            }
+            if (!keystorePassword.isNullOrBlank()) {
+                storePassword = keystorePassword
+                keyPassword = keystorePassword
+            }
+            if (!keyAlias.isNullOrBlank()) {
                 this.keyAlias = keyAlias
-                this.keyPassword = keyPassword
             }
         }
     }
 
     buildTypes {
         getByName("debug") {
-            if (!keystorePath.isNullOrBlank() && !storePassword.isNullOrBlank() && !keyAlias.isNullOrBlank() && !keyPassword.isNullOrBlank()) {
-                signingConfig = signingConfigs.getByName("wallora")
+            if (!keystoreFile.isNullOrBlank() &&
+                !keystorePassword.isNullOrBlank() &&
+                !keyAlias.isNullOrBlank()
+            ) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
         getByName("release") {
-            if (!keystorePath.isNullOrBlank() && !storePassword.isNullOrBlank() && !keyAlias.isNullOrBlank() && !keyPassword.isNullOrBlank()) {
-                signingConfig = signingConfigs.getByName("wallora")
+            if (!keystoreFile.isNullOrBlank() &&
+                !keystorePassword.isNullOrBlank() &&
+                !keyAlias.isNullOrBlank()
+            ) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }
