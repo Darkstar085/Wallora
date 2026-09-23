@@ -2,34 +2,28 @@ package com.darkstar.wallora.data
 
 import android.app.WallpaperManager
 import android.content.Context
+import com.darkstar.wallora.model.WallpaperTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
-import java.net.URL
-import com.darkstar.wallora.model.WallpaperTarget
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
-class WallpaperApplier(private val context: Context) {
+class WallpaperApplier(
+    private val context: Context,
+    private val client: OkHttpClient = NetworkClient.client,
+) {
     suspend fun apply(url: String, target: WallpaperTarget = WallpaperTarget.BOTH): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val connection = URL(url).openConnection() as HttpURLConnection
-            connection.connectTimeout = 15_000
-            connection.readTimeout = 30_000
-            connection.instanceFollowRedirects = true
-            connection.connect()
-            try {
-                check(connection.responseCode in 200..299) { "Image download returned HTTP ${connection.responseCode}" }
-                val manager = WallpaperManager.getInstance(context)
-                connection.inputStream.use { stream ->
+            client.newCall(Request.Builder().url(url).build()).execute().use { call ->
+                check(call.isSuccessful) { "Image download returned HTTP ${call.code}" }
+                call.body?.byteStream()?.use { stream ->
                     val flags = when (target) {
                         WallpaperTarget.HOME -> WallpaperManager.FLAG_SYSTEM
                         WallpaperTarget.LOCK -> WallpaperManager.FLAG_LOCK
                         WallpaperTarget.BOTH -> WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
                     }
-                    manager.setStream(stream, null, true, flags)
-                    Unit
-                }
-            } finally {
-                connection.disconnect()
+                    WallpaperManager.getInstance(context).setStream(stream, null, true, flags)
+                } ?: error("Image download returned an empty response")
             }
         }
     }
