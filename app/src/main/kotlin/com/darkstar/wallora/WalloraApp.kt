@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -78,10 +79,20 @@ fun WalloraApp(preferences: PreferencesStore) {
             }
         }) { padding ->
             Box(Modifier.fillMaxSize()) {
-                when (selectedTab) {
-                    AppTab.HOME -> HomeScreen(repository, favorites, padding) { selectedWallpaper = it }
-                    AppTab.FAVORITES -> FavoritesScreen(repository, favorites, padding) { selectedWallpaper = it }
-                    AppTab.SETTINGS -> SettingsScreen(padding, preferences, imageCache)
+                AppTab.entries.forEach { tab ->
+                    val selected = selectedTab == tab
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .alpha(if (selected) 1f else 0f)
+                            .zIndex(if (selected) 1f else 0f)
+                    ) {
+                        when (tab) {
+                            AppTab.HOME -> HomeScreen(repository, favorites, padding) { selectedWallpaper = it }
+                            AppTab.FAVORITES -> FavoritesScreen(repository, favorites, padding) { selectedWallpaper = it }
+                            AppTab.SETTINGS -> SettingsScreen(padding, preferences, imageCache)
+                        }
+                    }
                 }
 
                 selectedWallpaper?.let { wallpaper ->
