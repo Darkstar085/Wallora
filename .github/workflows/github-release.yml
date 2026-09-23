@@ -46,7 +46,7 @@ jobs:
         env:
           GITHUB_EVENT_BEFORE: \${{ github.event.before }}
           GITHUB_REPOSITORY: \${{ github.repository }}
-        run: python scripts/release.py --prepare
+        run: python .github/release.py --prepare
 
       - name: Build release APK
         if: steps.prepare.outputs.release_needed == 'true'

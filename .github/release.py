@@ -93,10 +93,10 @@ def main():
         if changelog.exists() and marker in changelog.read_text(encoding="utf-8"):
             print(f"Changelog entry for {name} already exists; keeping it.")
         else:
-            subprocess.run(["python", "scripts/generate_changelog.py", "--version", name], cwd=ROOT, check=True)
+            subprocess.run(["python", ".github/generate_changelog.py", "--version", name], cwd=ROOT, check=True)
     if args.publish:
         if not (ROOT / "CHANGELOG.md").exists():
-            raise SystemExit("CHANGELOG.md is missing. Run scripts/generate_changelog.py first.")
+            raise SystemExit("CHANGELOG.md is missing. Run .github/generate_changelog.py first.")
         notes_file = ROOT / "RELEASE_NOTES.md"
         notes_file.write_text(release_notes(name), encoding="utf-8")
         repo = os.environ["GITHUB_REPOSITORY"]
