@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.OutputStream
 
 class WallpaperDownloader(private val context: Context, private val client: OkHttpClient = NetworkClient.client) {
     suspend fun download(wallpaper: Wallpaper, customTreeUri: String?): Result<Uri> = withContext(Dispatchers.IO) {
@@ -32,24 +33,37 @@ class WallpaperDownloader(private val context: Context, private val client: OkHt
         }
         val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return null
         return try {
-            downloadBytes(wallpaper.url).use { input -> resolver.openOutputStream(uri)?.use { output -> input.copyTo(output) } ?: error("Unable to open output") }
+            resolver.openOutputStream(uri)?.use { output ->
+                downloadTo(output, wallpaper.url)
+            } ?: error("Unable to open output")
             resolver.update(uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null)
             uri
-        } catch (error: Throwable) { resolver.delete(uri, null, null); throw error }
+        } catch (error: Throwable) {
+            resolver.delete(uri, null, null)
+            throw error
+        }
     }
 
     private fun downloadToTree(resolver: ContentResolver, treeUri: Uri, wallpaper: Wallpaper): Uri? {
         val documentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, DocumentsContract.getTreeDocumentId(treeUri))
         val uri = DocumentsContract.createDocument(resolver, documentUri, mimeType(wallpaper.format), wallpaper.filename) ?: return null
         return try {
-            downloadBytes(wallpaper.url).use { input -> resolver.openOutputStream(uri)?.use { output -> input.copyTo(output) } ?: error("Unable to open output") }
+            resolver.openOutputStream(uri)?.use { output ->
+                downloadTo(output, wallpaper.url)
+            } ?: error("Unable to open output")
             uri
-        } catch (error: Throwable) { DocumentsContract.deleteDocument(resolver, uri); throw error }
+        } catch (error: Throwable) {
+            DocumentsContract.deleteDocument(resolver, uri)
+            throw error
+        }
     }
 
-    private fun downloadBytes(url: String) = client.newCall(Request.Builder().url(url).build()).execute().let { response ->
-        check(response.isSuccessful) { "Wallpaper download failed: HTTP ${response.code}" }
-        response.body?.byteStream() ?: error("Wallpaper download returned an empty response")
+    private fun downloadTo(output: OutputStream, url: String) {
+        client.newCall(Request.Builder().url(url).build()).execute().use { result ->
+            check(result.isSuccessful) { "Wallpaper download failed: HTTP ${result.code}" }
+            result.body?.byteStream()?.use { input -> input.copyTo(output) }
+                ?: error("Wallpaper download returned an empty response")
+        }
     }
 
     private fun mimeType(format: String): String = when (format.lowercase()) {
