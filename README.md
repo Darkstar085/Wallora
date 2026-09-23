@@ -1,51 +1,83 @@
-# Wallora
-
-<div align="center">
-
-**A clean Android wallpaper app built with Kotlin and Jetpack Compose.**
-
-Discover curated wallpapers, save favorites, preview images, download them, and set them directly on your device.
-
-<p>
-  <a href="https://github.com/Darkstar085/Wallora/releases"><img src="https://img.shields.io/github/v/release/Darkstar085/Wallora?style=flat-square" alt="Latest release"></a>
-  <a href="https://github.com/Darkstar085/Wallora/actions"><img src="https://img.shields.io/github/actions/workflow/status/Darkstar085/Wallora/debug.yml?style=flat-square&label=debug" alt="Debug build"></a>
-  <a href="https://github.com/Darkstar085/Wallora/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Darkstar085/Wallora?style=flat-square" alt="License"></a>
+<p align="center">
+  <img src=".github/assets/logo.png" width="180" alt="Wallora logo">
 </p>
 
-</div>
+<p align="center">
+  <strong>Beautiful wallpapers. Simple experience.</strong><br>
+  A modern Android wallpaper app built with Kotlin and Jetpack Compose.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Android-API%2026%2B-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android API 26+">
+  <img src="https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin">
+  <img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose">
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License">
+</p>
+
+---
 
 ## ✨ Features
 
-- 🖼️ Curated wallpaper discovery and categories
-- ❤️ Persistent favorites
-- 🔍 Search and filtering
-- 👀 Full-screen preview with wallpaper controls
-- 📥 Downloads with Android notifications
-- 🔄 In-app update checks from GitHub Releases
+- 🖼️ Discover curated wallpapers and collections
+- ❤️ Save wallpapers to Favorites
+- 🔍 Search and filter the wallpaper catalog
+- 👀 Preview wallpapers in full screen
+- 📥 Download wallpapers with Android notifications
+- 📲 Apply wallpapers to the Home screen, Lock screen, or both
+- 🔄 Check for app updates from GitHub Releases
+- 🎨 Clean Material 3 interface with dynamic theming
 
-## 🧱 Stack
+## 📸 Screenshots
 
-| Area | Technology |
-| --- | --- |
-| Language | Kotlin |
-| UI | Jetpack Compose + Material 3 |
-| Images | Coil 3 |
-| Networking | OkHttp |
-| JSON | Moshi |
-| Background work | WorkManager |
-| Build | Gradle + GitHub Actions |
+<p align="center">
+  <img width="100%" alt="Wallora app screenshots" src=".github/assets/app.png">
+</p>
 
-## 🚀 Build
+## 🧰 Tech Stack
 
-Requirements: Android Studio, JDK 17, Android SDK API 37, and Android 8.0 (API 26) or newer.
+- **Kotlin**
+- **Jetpack Compose**
+- **Material 3**
+- **AndroidX**
+- **Coil 3** for image loading
+- **OkHttp** for networking
+- **Moshi** for JSON parsing
+- **WorkManager** for background work
+- **Gradle + GitHub Actions**
+
+## 🚀 Quick Start
+
+### Requirements
+
+- Android Studio
+- JDK 17
+- Android SDK 37
+- Android 8.0 (API 26) or newer
+
+### Clone
+
+```bash
+git clone https://github.com/Darkstar085/Wallora.git
+cd Wallora
+```
+
+### Build
+
+The repository includes the Gradle wrapper.
 
 ```bash
 ./gradlew assembleDebug
 ```
 
-The debug APK is generated under `app/build/outputs/apk/debug/`.
+The generated debug APK is placed under `app/build/outputs/apk/debug/`.
 
-Release signing uses these environment variables:
+For a release build:
+
+```bash
+./gradlew assembleRelease
+```
+
+Release signing uses:
 
 ```text
 ANDROID_KEYSTORE_PATH
@@ -54,45 +86,26 @@ ANDROID_KEY_ALIAS
 ANDROID_KEY_PASSWORD
 ```
 
-App versioning lives directly in `app/build.gradle.kts`:
+## 📦 Releases
 
-```kotlin
-versionCode = 10
-versionName = "2.0"
-```
+Download the latest APK from the repository's [Releases](https://github.com/Darkstar085/Wallora/releases) page.
 
-## 📦 GitHub Actions
+## 🖼️ Wallpaper Catalog
 
-| Workflow | Purpose |
-| --- | --- |
-| Debug | Build a debug APK and send it to Telegram |
-| Release | Validate version, build/sign APK, publish GitHub Release, and send APK to Telegram |
-| Cleanup | Retain the latest workflow run and configured cache family |
+Wallora reads `api/wallpapers.json` from [Darkstar085/Wallpapers](https://github.com/Darkstar085/Wallpapers).
 
-All three workflows are manually triggered.
-
-Release notes are generated from Git commit subjects. `CHANGELOG.md` is intentionally not part of the release process.
-
-## 🖼️ Wallpaper catalog
-
-Wallora reads `api/wallpapers.json` from [`Darkstar085/Wallpapers`](https://github.com/Darkstar085/Wallpapers). The wallpaper repository and its image assets are maintained separately and may have their own licensing and attribution requirements.
-
-## 📁 Structure
-
-```text
-Wallora/
-├── app/                 # Android application
-├── .github/scripts/     # CI/release helpers
-├── .github/workflows/   # Manual GitHub Actions
-├── build.gradle.kts
-├── settings.gradle.kts
-└── gradlew
-```
+Wallpaper images are maintained separately and may have their own licensing and attribution requirements.
 
 ## 🤝 Contributing
 
-Keep changes focused and use the repository's Conventional Commit style. For larger changes, open an issue before implementation.
+Contributions, bug reports, and improvements are welcome. Keep changes focused and follow the existing Kotlin, Jetpack Compose, and Conventional Commit conventions.
 
 ## 📄 License
 
-The Wallora application source is licensed under the [MIT License](LICENSE). Wallpaper assets are maintained separately.
+Wallora is licensed under the [MIT License](LICENSE).
+
+---
+
+<p align="center">
+  <strong>Wallora</strong> — Wallpapers for a brighter you.
+</p>
