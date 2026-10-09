@@ -1,6 +1,15 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+}
+
+val signingPropertiesFile = rootProject.file("keystore.properties")
+val signingProperties = Properties().apply {
+    if (signingPropertiesFile.exists()) {
+        signingPropertiesFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -15,26 +24,35 @@ android {
         versionName = "2.0"
     }
 
-    val keystoreFile = System.getenv("ANDROID_KEYSTORE_PATH")
-    val keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-    val keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-    val keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+    val keystorePath = signingProperties.getProperty("storeFile")
+        ?.takeIf { it.isNotBlank() }
+        ?: System.getenv("ANDROID_KEYSTORE_PATH")
+        ?: System.getenv("ANDROID_KEYSTORE_FILE")
+    val keystorePassword = signingProperties.getProperty("storePassword")
+        ?.takeIf { it.isNotBlank() }
+        ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    val keyAliasValue = signingProperties.getProperty("keyAlias")
+        ?.takeIf { it.isNotBlank() }
+        ?: System.getenv("ANDROID_KEY_ALIAS")
+    val keyPasswordValue = signingProperties.getProperty("keyPassword")
+        ?.takeIf { it.isNotBlank() }
+        ?: System.getenv("ANDROID_KEY_PASSWORD")
 
     signingConfigs {
         create("release") {
-            if (!keystoreFile.isNullOrBlank()) storeFile = file(keystoreFile)
+            if (!keystorePath.isNullOrBlank()) storeFile = rootProject.file(keystorePath)
             if (!keystorePassword.isNullOrBlank()) storePassword = keystorePassword
-            if (!keyAlias.isNullOrBlank()) this.keyAlias = keyAlias
-            if (!keyPassword.isNullOrBlank()) this.keyPassword = keyPassword
+            if (!keyAliasValue.isNullOrBlank()) keyAlias = keyAliasValue
+            if (!keyPasswordValue.isNullOrBlank()) keyPassword = keyPasswordValue
         }
     }
 
     buildTypes {
         getByName("release") {
-            if (!keystoreFile.isNullOrBlank() &&
+            if (!keystorePath.isNullOrBlank() &&
                 !keystorePassword.isNullOrBlank() &&
-                !keyAlias.isNullOrBlank() &&
-                !keyPassword.isNullOrBlank()
+                !keyAliasValue.isNullOrBlank() &&
+                !keyPasswordValue.isNullOrBlank()
             ) {
                 signingConfig = signingConfigs.getByName("release")
             }
